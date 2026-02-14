@@ -98,3 +98,21 @@ Key review areas:
 - Validate backfills can rerun safely for the same date range without duplicate outputs or state corruption.
 - Confirm SLA metrics are instrumented and alerts trigger within the defined breach window.
 - Ensure resource scaling policies handle peak loads without starving steady-state jobs or exceeding cost limits.
+
+## Research Directives
+
+When `data-pipeline` is detected, inject these search directives into research agent prompts.
+
+### best-practices-researcher
+- ETL idempotency patterns and safe reprocessing strategies
+- Data validation at pipeline boundaries and contract testing
+- Backfill strategies for historical data reprocessing
+- Schema evolution and backward-compatible migration patterns
+- Exactly-once processing semantics and deduplication techniques
+
+### framework-docs-researcher
+- Apache Airflow/Dagster/Prefect DAG definition and scheduling
+- dbt transformation patterns and incremental model configuration
+- Data quality framework APIs (Great Expectations, Soda, dbt tests)
+- Message queue acknowledgment semantics (Kafka, RabbitMQ, SQS)
+- Parquet/Avro schema evolution and format compatibility

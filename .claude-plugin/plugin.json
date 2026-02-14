@@ -1,19 +1,22 @@
 {
   "name": "interflux",
   "version": "0.1.0",
-  "description": "Multi-agent document review with scored triage, domain detection, content slicing, and knowledge injection. 7 agents, 2 commands, 1 skill, 1 MCP server. Companion plugin for Clavain.",
+  "description": "Multi-agent review and research with scored triage, domain detection, content slicing, and knowledge injection. 12 agents, 3 commands, 2 skills, 2 MCP servers. Companion plugin for Clavain.",
   "author": {
     "name": "mistakeknot"
   },
   "license": "MIT",
   "keywords": [
     "review",
+    "research",
     "multi-agent",
     "flux-drive",
+    "flux-research",
     "domain-detection",
     "triage",
     "code-review",
-    "document-review"
+    "document-review",
+    "exa"
   ],
   "mcpServers": {
     "qmd": {
@@ -22,6 +25,17 @@
       "args": [
         "mcp"
       ]
+    },
+    "exa": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "exa-mcp-server"
+      ],
+      "env": {
+        "EXA_API_KEY": "${EXA_API_KEY}"
+      }
     }
   }
 }

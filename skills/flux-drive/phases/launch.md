@@ -111,6 +111,38 @@ Launch Stage 1 agents (top 2-3 by triage score) as parallel Task calls with `run
 
 Wait for Stage 1 agents to complete (use the polling from Step 2.3).
 
+### Step 2.2a: Research context dispatch (optional, between stages)
+
+After Stage 1 agents complete but BEFORE the expansion decision (Step 2.2b), check if any Stage 1 findings would benefit from research context.
+
+**Trigger conditions** (any of these):
+- A finding references a library/framework version and questions whether the pattern is current best practice
+- A finding flags a pattern as "possibly deprecated" or "may have changed"
+- A finding identifies a concurrency or data pattern but is uncertain about the framework's recommended approach
+- A finding notes "this looks like [known pattern] but I'm not sure" — external confirmation needed
+
+**If triggered:**
+1. Select 1-2 research agents based on the finding type:
+   - Best practice uncertainty → `interflux:research:best-practices-researcher`
+   - Framework/version question → `interflux:research:framework-docs-researcher`
+   - Historical context needed → `interflux:research:git-history-analyzer`
+2. Construct a focused research query from the specific finding
+3. Dispatch via Task tool (NOT run_in_background — wait for result, max 60s)
+4. Inject the research result into Stage 2 agent prompts as additional context:
+   ```
+   ## Research Context (from Stage 1.5)
+   Finding [ID] from [agent] prompted research on [topic]:
+   [Research result summary — 3-5 lines]
+   Source: [agent name], confidence: [high/medium/low]
+   ```
+
+**Budget:** Maximum 2 research dispatches between stages. If more findings need research, pick the 2 with highest severity.
+
+**Skip conditions:**
+- All Stage 1 findings are P2/improvements (no uncertainty worth resolving)
+- User selected "Stop here" (no Stage 2 planned)
+- No Stage 1 findings reference external patterns or frameworks
+
 ### Step 2.2b: Domain-aware expansion decision
 
 After Stage 1 completes, read the Findings Index from each Stage 1 output file. Then use the **expansion scoring algorithm** to recommend which Stage 2 agents (and expansion pool agents) to launch.
@@ -357,6 +389,23 @@ Focus on: [specific sections relevant to this agent's domain]
 Depth needed: [thin sections need more depth, deep sections need only validation]
 
 Be concrete. Reference specific sections by name. Don't give generic advice.
+
+## Research Escalation (Optional)
+
+If you encounter a pattern, library, or practice during review where external context would strengthen your finding, you can spawn a research agent for a quick lookup:
+
+- `Task(interflux:research:best-practices-researcher)` — industry best practices, community conventions
+- `Task(interflux:research:framework-docs-researcher)` — official library/framework documentation
+- `Task(interflux:research:learnings-researcher)` — past solutions from this project's docs/solutions/
+- `Task(interflux:research:git-history-analyzer)` — why code evolved to its current state
+- `Task(interflux:research:repo-research-analyst)` — repository conventions and patterns
+
+**Rules:**
+- Only escalate when external context would change your finding's severity or recommendation
+- Keep queries targeted and specific (one question, not "tell me everything about X")
+- Do NOT escalate for general knowledge you already have — only for project-specific or version-specific facts
+- Maximum 1 research escalation per review (budget constraint)
+- Include the research result in your finding as "Context: [source] confirms/contradicts..."
 ```
 
 After each stage launch, tell the user:

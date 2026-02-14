@@ -29,11 +29,13 @@ def commands_dir(project_root: Path) -> Path:
 
 @pytest.fixture(scope="session")
 def all_agent_files(agents_dir: Path) -> list[Path]:
-    """All agent .md files from review/ directory."""
-    review_dir = agents_dir / "review"
-    if review_dir.is_dir():
-        return sorted(review_dir.glob("*.md"))
-    return []
+    """All agent .md files from review/ and research/ directories."""
+    agent_files = []
+    for category in ["review", "research"]:
+        category_dir = agents_dir / category
+        if category_dir.is_dir():
+            agent_files.extend(sorted(category_dir.glob("*.md")))
+    return sorted(agent_files)
 
 
 @pytest.fixture(scope="session")

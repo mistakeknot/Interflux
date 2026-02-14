@@ -98,3 +98,21 @@ Key review areas:
 - Validate per-task stack sizing with runtime high-water marks and overflow detection enabled.
 - Confirm periodic-task worst-case execution time and jitter stay within declared deadlines.
 - Ensure memory pools are used for real-time paths, and dynamic allocation is bounded or excluded where nondeterministic.
+
+## Research Directives
+
+When `embedded-systems` is detected, inject these search directives into research agent prompts.
+
+### best-practices-researcher
+- RTOS task priority design and priority inversion mitigation
+- Interrupt-safe data structures and lock-free queue patterns
+- Watchdog timer patterns and system health monitoring
+- Firmware update strategies (OTA, dual-bank, A/B partitions)
+- Memory-mapped I/O safety and volatile access patterns
+
+### framework-docs-researcher
+- FreeRTOS/Zephyr API documentation and task management
+- HAL driver interfaces and peripheral abstraction layers
+- Linker script configuration for memory layout and sections
+- Bootloader protocols and firmware image verification
+- CMSIS-RTOS specification and portable RTOS abstractions

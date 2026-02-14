@@ -98,3 +98,21 @@ Key review areas:
 - Validate TTY detection toggles interactive behavior correctly and avoids prompts in non-interactive contexts.
 - Confirm SIGINT and SIGTERM handlers stop work safely, flush state, and return meaningful exit codes.
 - Ensure config lookup order is deterministic (`flags > env > file > defaults`) and documented.
+
+## Research Directives
+
+When `cli-tool` is detected, inject these search directives into research agent prompts.
+
+### best-practices-researcher
+- CLI UX conventions for help text, exit codes, and signal handling
+- Argument parsing patterns and subcommand hierarchy design
+- Progressive disclosure in CLI interfaces
+- Shell completion generation for bash/zsh/fish
+- Cross-platform CLI behavior and path handling
+
+### framework-docs-researcher
+- Commander.js/clap/cobra command framework documentation
+- Readline/rustyline line editing and history APIs
+- Terminal color libraries (chalk/colored) and TTY detection
+- Cross-platform path handling and filesystem abstractions
+- Man page generation and help text formatting tools

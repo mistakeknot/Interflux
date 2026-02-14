@@ -20,8 +20,8 @@ def test_skill_count(skills_dir):
         d for d in skills_dir.iterdir()
         if d.is_dir() and (d / "SKILL.md").exists()
     )
-    assert len(dirs) == 1, (
-        f"Expected 1 skill, found {len(dirs)}: {[d.name for d in dirs]}"
+    assert len(dirs) == 2, (
+        f"Expected 2 skills, found {len(dirs)}: {[d.name for d in dirs]}"
     )
 
 
@@ -54,3 +54,8 @@ def test_flux_drive_references_exist(skills_dir):
     expected = ["agent-roster.md", "scoring-examples.md"]
     for name in expected:
         assert (refs_dir / name).exists(), f"Missing reference: {name}"
+
+
+def test_flux_research_skill_exists(skills_dir):
+    """flux-research skill exists with SKILL.md."""
+    assert (skills_dir / "flux-research" / "SKILL.md").exists(), "Missing flux-research/SKILL.md"

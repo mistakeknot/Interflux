@@ -113,3 +113,21 @@ Key review areas:
 - Validate canary rollouts use controlled traffic splits with automatic rollback on degradation.
 - Confirm CPU and GPU sizing meets p95 and p99 latency goals with required memory headroom under expected load.
 - Ensure overload behavior degrades gracefully (queueing, shedding, fallback) without cascading failures.
+
+## Research Directives
+
+When `ml-pipeline` is detected, inject these search directives into research agent prompts.
+
+### best-practices-researcher
+- Experiment reproducibility patterns and seed management
+- Data versioning strategies for training datasets
+- Model serving latency budgets and optimization techniques
+- Feature store design and feature engineering pipelines
+- A/B testing statistical rigor and sample size calculation
+
+### framework-docs-researcher
+- PyTorch/TensorFlow serving APIs and model export formats
+- MLflow experiment tracking and model registry configuration
+- DVC data versioning and pipeline stage definitions
+- ONNX model format and cross-framework interoperability
+- Feature store client libraries (Feast, Tecton, Hopsworks)

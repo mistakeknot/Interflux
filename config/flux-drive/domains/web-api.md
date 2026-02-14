@@ -106,3 +106,21 @@ Key review areas:
 Success criteria hints:
 - Reference specific query patterns (e.g., "SELECT with JOIN on unindexed column X") when flagging N+1 or full-scan issues
 - Include estimated row counts or concurrency levels when flagging connection pool or transaction boundary concerns
+
+## Research Directives
+
+When `web-api` is detected, inject these search directives into research agent prompts.
+
+### best-practices-researcher
+- REST API design patterns and resource modeling
+- API versioning strategies (URL path vs header vs content negotiation)
+- Rate limiting best practices and token bucket algorithms
+- Idempotency patterns for mutation endpoints
+- Pagination cursor vs offset trade-offs for large datasets
+
+### framework-docs-researcher
+- Express/FastAPI/Django middleware configuration and ordering
+- OpenAPI specification authoring and validation
+- JWT token handling and refresh token rotation
+- CORS configuration and preflight request handling
+- Connection pooling setup and tuning for database drivers

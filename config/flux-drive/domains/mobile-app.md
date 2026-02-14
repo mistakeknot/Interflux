@@ -98,3 +98,21 @@ Key review areas:
 - Validate layouts adapt correctly across supported device sizes, orientations, and safe areas.
 - Confirm critical animations maintain target frame rate and monitor jank against defined thresholds.
 - Ensure gesture recognizers resolve conflicts predictably between scroll, swipe, and drag interactions.
+
+## Research Directives
+
+When `mobile-app` is detected, inject these search directives into research agent prompts.
+
+### best-practices-researcher
+- Offline-first data patterns and sync conflict resolution
+- Deep linking conventions and universal link configuration
+- Push notification best practices and user engagement patterns
+- App lifecycle management across iOS and Android
+- Accessibility guidelines (WCAG mobile) and assistive technology support
+
+### framework-docs-researcher
+- React Native/Flutter/SwiftUI platform APIs and bridging
+- App store review guidelines (Apple App Store, Google Play)
+- Mobile CI/CD pipelines (Fastlane, Bitrise, App Center)
+- Crash reporting SDK integration (Sentry, Crashlytics, Bugsnag)
+- Mobile performance profiling tools and memory analysis

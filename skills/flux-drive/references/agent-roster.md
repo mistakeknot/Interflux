@@ -60,3 +60,17 @@ env DISPLAY=:99 CHROME_PATH=/usr/local/bin/google-chrome-wrapper \
 **Error handling**: If the Oracle command fails or times out, note it in the output file and continue without Phase 4. Do NOT block synthesis on Oracle failures — treat it as "Oracle: no findings" and skip Steps 4.2-4.5.
 
 Oracle counts toward the dynamic slot ceiling. If the roster is already full, Oracle replaces the lowest-scoring Plugin Agent.
+
+### Research Agents (interflux — available for escalation)
+
+Review agents can invoke these for targeted lookups during review. The flux-drive orchestrator can also dispatch them between stages for context enrichment (see Step 2.2a in `phases/launch.md`).
+
+| Agent | subagent_type | Focus |
+|-------|--------------|-------|
+| best-practices-researcher | interflux:research:best-practices-researcher | Industry standards, community patterns, deprecation checks |
+| framework-docs-researcher | interflux:research:framework-docs-researcher | Official library docs, version constraints, API references |
+| git-history-analyzer | interflux:research:git-history-analyzer | Code evolution, blame, contributor mapping |
+| learnings-researcher | interflux:research:learnings-researcher | Past solutions from docs/solutions/ |
+| repo-research-analyst | interflux:research:repo-research-analyst | Repository structure, conventions, patterns |
+
+**Note:** These agents are NOT scored or selected as part of flux-drive triage. They are support agents available on-demand during review, not review agents themselves.

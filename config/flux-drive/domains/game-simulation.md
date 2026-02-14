@@ -125,3 +125,21 @@ Key review areas:
 Success criteria hints:
 - Describe a concrete NPC behavior sequence that demonstrates the oscillation or incoherence being flagged
 - Reference specific utility curve parameters when suggesting tuning changes
+
+## Research Directives
+
+When `game-simulation` is detected, inject these search directives into research agent prompts.
+
+### best-practices-researcher
+- ECS architecture patterns and component composition strategies
+- Game loop fixed timestep and accumulator-based update patterns
+- Death spiral prevention in variable-rate simulation loops
+- Utility AI decision making and scoring function design
+- Procedural generation techniques for world and content creation
+
+### framework-docs-researcher
+- Godot/Unity/Bevy ECS documentation and system ordering
+- Physics engine integration and collision detection APIs
+- Serialization strategies for save systems and state snapshots
+- Navmesh pathfinding configuration and agent steering
+- Behavior tree libraries and node type reference

@@ -98,3 +98,21 @@ Key review areas:
 - Validate tray actions and notifications behave consistently across supported OS states (foreground, background, locked).
 - Confirm auto-update downloads are signature-verified before install and fail closed on verification errors.
 - Ensure install and uninstall flows preserve required user-data migrations and remove app artifacts that should not persist.
+
+## Research Directives
+
+When `desktop-tauri` is detected, inject these search directives into research agent prompts.
+
+### best-practices-researcher
+- IPC bridge security patterns for webview-native communication
+- Native-web state synchronization and conflict resolution
+- Auto-update strategies with signature verification and rollback
+- Cross-platform file path handling and app data directory conventions
+- System tray integration and background process management
+
+### framework-docs-researcher
+- Tauri command/event API and capabilities model (v2)
+- Electron IPC documentation and contextBridge patterns
+- Native menu APIs and platform-specific menu conventions
+- Window management and multi-window lifecycle handling
+- OS notification APIs and permission request patterns

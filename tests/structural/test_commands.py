@@ -14,8 +14,8 @@ COMMAND_FILES = sorted(COMMANDS_DIR.glob("*.md"))
 def test_command_count(commands_dir):
     """Total command count matches expected value."""
     files = sorted(commands_dir.glob("*.md"))
-    assert len(files) == 2, (
-        f"Expected 2 commands, found {len(files)}: {[f.stem for f in files]}"
+    assert len(files) == 3, (
+        f"Expected 3 commands, found {len(files)}: {[f.stem for f in files]}"
     )
 
 
@@ -29,6 +29,7 @@ def test_command_has_frontmatter(cmd_file):
 
 
 def test_expected_commands_exist(commands_dir):
-    """Both expected commands exist."""
+    """All expected commands exist."""
     assert (commands_dir / "flux-drive.md").exists()
     assert (commands_dir / "flux-gen.md").exists()
+    assert (commands_dir / "flux-research.md").exists()

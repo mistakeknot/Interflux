@@ -106,3 +106,21 @@ Key review areas:
 Success criteria hints:
 - Show a concrete example of unintended agent behavior that would result from the ambiguous instruction being flagged
 - Include token count estimates when flagging prompts that risk exceeding practical context budgets
+
+## Research Directives
+
+When `claude-code-plugin` is detected, inject these search directives into research agent prompts.
+
+### best-practices-researcher
+- Claude Code plugin structure conventions and file organization
+- Hook event handling patterns (PreToolUse, PostToolUse, SessionStart)
+- Skill progressive disclosure and routing strategies
+- Agent prompt engineering for subagent effectiveness
+- MCP server integration patterns for tool augmentation
+
+### framework-docs-researcher
+- Claude Code plugin API and manifest schema
+- hooks.json event types and handler configuration
+- SKILL.md frontmatter fields and formatting requirements
+- Agent markdown format and subagent_type specification
+- MCP stdio/SSE protocol and server implementation

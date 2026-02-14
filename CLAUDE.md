@@ -4,7 +4,7 @@
 
 ## Overview
 
-Multi-agent document review engine — 7 agents, 2 commands, 1 skill, 1 MCP server. Companion plugin for Clavain. Provides scored triage, domain detection, content slicing, and knowledge injection.
+Multi-agent review and research engine — 12 agents (7 review + 5 research), 3 commands, 2 skills, 2 MCP servers. Companion plugin for Clavain. Provides scored triage, domain detection, content slicing, knowledge injection, and parallel multi-agent research.
 
 ## Quick Commands
 
@@ -13,9 +13,12 @@ Multi-agent document review engine — 7 agents, 2 commands, 1 skill, 1 MCP serv
 claude --plugin-dir /root/projects/Interflux
 
 # Validate structure
-ls skills/*/SKILL.md | wc -l          # Should be 1
+ls skills/*/SKILL.md | wc -l          # Should be 2
 ls agents/review/*.md | wc -l         # Should be 7
-ls commands/*.md | wc -l              # Should be 2
+ls agents/research/*.md | wc -l       # Should be 5
+ls commands/*.md | wc -l              # Should be 3
+python3 -c "import json; d=json.load(open('.claude-plugin/plugin.json')); print(list(d['mcpServers'].keys()))"  # ['qmd', 'exa']
+grep -l '## Research Directives' config/flux-drive/domains/*.md | wc -l  # Should be 11
 python3 -c "import json; json.load(open('.claude-plugin/plugin.json'))"  # Manifest check
 ```
 
@@ -23,6 +26,9 @@ python3 -c "import json; json.load(open('.claude-plugin/plugin.json'))"  # Manif
 
 - Namespace: `interflux:` (companion to Clavain)
 - 7 core review agents (fd-architecture, fd-safety, fd-correctness, fd-quality, fd-user-product, fd-performance, fd-game-design) — each auto-detects language
+- 5 research agents (best-practices-researcher, framework-docs-researcher, git-history-analyzer, learnings-researcher, repo-research-analyst) — orchestrated by flux-research
 - Phase tracking is the **caller's** responsibility — Interflux commands do not source lib-gates.sh
 - Knowledge compounding writes to Interflux's `config/flux-drive/knowledge/` directory
 - qmd MCP server provides semantic search for project documentation
+- Exa MCP server is a progressive enhancement — if `EXA_API_KEY` not set, agents fall back to Context7 + WebSearch
+- Research Directives in domain profiles guide external agents (best-practices, framework-docs) with domain-specific search terms

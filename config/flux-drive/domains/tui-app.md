@@ -98,3 +98,21 @@ Key review areas:
 - Validate modal and modeless flows are consistent and clearly communicate interaction state changes.
 - Confirm supported screen-reader modes expose meaningful labels and navigation landmarks.
 - Ensure mouse support enhances workflows without breaking keyboard-only operation.
+
+## Research Directives
+
+When `tui-app` is detected, inject these search directives into research agent prompts.
+
+### best-practices-researcher
+- Terminal rendering performance and diff-based update strategies
+- Keyboard shortcut conventions and keymap design patterns
+- Responsive terminal layouts for varying window sizes
+- Mouse event handling in terminal applications
+- Clipboard integration across terminal emulators and platforms
+
+### framework-docs-researcher
+- Bubble Tea/Ratatui/crossterm documentation and component APIs
+- ANSI escape code reference and SGR parameter sequences
+- Terminal capability detection (terminfo/termcap) and fallback strategies
+- Unicode width handling and East Asian character support
+- Terminal multiplexer compatibility (tmux, screen) considerations

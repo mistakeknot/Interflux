@@ -98,3 +98,21 @@ Key review areas:
 - Validate examples cover core use cases and reflect current API signatures and best practices.
 - Confirm dependency versions are compatible with target framework versions listed in support policy.
 - Ensure migration guides describe breaking changes, replacement APIs, and stepwise upgrade actions.
+
+## Research Directives
+
+When `library-sdk` is detected, inject these search directives into research agent prompts.
+
+### best-practices-researcher
+- Semantic versioning discipline and breaking change detection
+- API surface minimization and encapsulation strategies
+- Backward compatibility strategies for public interfaces
+- Deprecation communication patterns and sunset timelines
+- Zero-dependency design and dependency minimization techniques
+
+### framework-docs-researcher
+- Package manager publishing guides (npm, PyPI, crates.io, Maven)
+- API documentation generators (TypeDoc, Sphinx, rustdoc, Javadoc)
+- Compatibility testing matrices and CI configuration
+- Changelog generation and release notes automation
+- Package bundling and tree-shaking configuration
