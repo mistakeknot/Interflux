@@ -6,6 +6,10 @@
 
 Multi-agent review and research engine — 12 agents (7 review + 5 research), 3 commands, 2 skills, 2 MCP servers. Companion plugin for Clavain. Provides scored triage, domain detection, content slicing, knowledge injection, and parallel multi-agent research.
 
+## Protocol Specification
+
+The flux-drive review protocol is documented in `docs/spec/` (flux-drive-spec 1.0.0). 9 documents covering the 3-phase lifecycle, scoring algorithm, staging dispatch, synthesis, contracts, and extensions. See `docs/spec/README.md` for reading order and conformance levels.
+
 ## Quick Commands
 
 ```bash

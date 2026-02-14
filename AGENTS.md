@@ -1,0 +1,218 @@
+# Interflux — Development Guide
+
+Multi-agent review and research engine for Claude Code. Companion plugin for [Clavain](https://github.com/mistakeknot/Clavain).
+
+## Quick Reference
+
+| Item | Value |
+|------|-------|
+| Repo | `https://github.com/mistakeknot/Interflux` |
+| Namespace | `interflux:` |
+| Manifest | `.claude-plugin/plugin.json` |
+| Components | 12 agents, 3 commands, 2 skills, 2 MCP servers |
+| License | MIT |
+
+## Architecture
+
+```
+Interflux/
+├── .claude-plugin/plugin.json     # Plugin manifest (name, version, MCP servers)
+├── agents/
+│   ├── review/                    # 7 review agents (fd-*)
+│   │   ├── fd-architecture.md
+│   │   ├── fd-correctness.md
+│   │   ├── fd-game-design.md
+│   │   ├── fd-performance.md
+│   │   ├── fd-quality.md
+│   │   ├── fd-safety.md
+│   │   ├── fd-user-product.md
+│   │   └── references/           # Shared reference material (not agents)
+│   │       └── concurrency-patterns.md
+│   └── research/                  # 5 research agents
+│       ├── best-practices-researcher.md
+│       ├── framework-docs-researcher.md
+│       ├── git-history-analyzer.md
+│       ├── learnings-researcher.md
+│       └── repo-research-analyst.md
+├── commands/                      # 3 slash commands
+│   ├── flux-drive.md              # /interflux:flux-drive — multi-agent review
+│   ├── flux-gen.md                # /interflux:flux-gen — generate project-specific agents
+│   └── flux-research.md           # /interflux:flux-research — multi-agent research
+├── skills/
+│   ├── flux-drive/                # Review orchestration skill
+│   │   ├── SKILL.md               # Entry point — triage, scoring, dispatch
+│   │   ├── phases/                # Phase-specific instructions
+│   │   │   ├── launch.md          # Stage 1/2 dispatch, expansion decision
+│   │   │   ├── launch-codex.md    # Codex delegation variant
+│   │   │   ├── cross-ai.md        # Oracle/Codex cross-AI dispatch
+│   │   │   ├── shared-contracts.md # Completion signal, findings index format
+│   │   │   ├── slicing.md         # Content routing for large inputs
+│   │   │   └── synthesize.md      # Findings aggregation, verdict
+│   │   └── references/
+│   │       ├── agent-roster.md    # Agent metadata and invocation guide
+│   │       └── scoring-examples.md # Worked triage scoring examples
+│   └── flux-research/
+│       └── SKILL.md               # Research orchestration — triage, dispatch, synthesize
+├── config/
+│   └── flux-drive/
+│       ├── domains/               # 11 domain detection profiles
+│       │   ├── index.yaml         # Detection signals and scoring weights
+│       │   ├── web-api.md
+│       │   ├── cli-tool.md
+│       │   ├── tui-app.md
+│       │   ├── game-simulation.md
+│       │   ├── data-pipeline.md
+│       │   ├── claude-code-plugin.md
+│       │   ├── library-sdk.md
+│       │   ├── desktop-tauri.md
+│       │   ├── mobile-app.md
+│       │   ├── embedded-systems.md
+│       │   └── ml-pipeline.md
+│       └── knowledge/            # Durable review patterns (knowledge lifecycle)
+│           ├── README.md
+│           └── *.md              # Individual knowledge entries
+├── docs/
+│   └── spec/                     # flux-drive protocol specification (v1.0.0)
+│       ├── README.md             # Conformance levels, reading order
+│       ├── core/                 # Required protocol documents
+│       │   ├── protocol.md       # 3-phase lifecycle
+│       │   ├── scoring.md        # Agent selection algorithm
+│       │   ├── staging.md        # Stage expansion logic
+│       │   └── synthesis.md      # Findings aggregation
+│       ├── contracts/            # Required interface contracts
+│       │   ├── findings-index.md # Agent output format
+│       │   └── completion-signal.md # Agent completion protocol
+│       └── extensions/           # Optional enhancements
+│           ├── domain-detection.md # Weighted signal scoring
+│           └── knowledge-lifecycle.md # Review memory with decay
+├── scripts/
+│   ├── detect-domains.py          # Domain profile scoring (deterministic)
+│   ├── update-domain-profiles.py  # Regenerate domain profiles
+│   └── validate-roster.sh        # Validate agent roster consistency
+└── tests/
+    └── structural/               # 103 pytest tests
+        ├── conftest.py
+        ├── helpers.py
+        ├── test_agents.py
+        ├── test_commands.py
+        ├── test_detect_domains.py
+        ├── test_namespace.py      # Guards against stale clavain: refs
+        ├── test_skills.py
+        └── test_slicing.py
+```
+
+## How It Works
+
+### flux-drive (Review Orchestration)
+
+Three-phase protocol: **Triage** → **Launch** → **Synthesize**.
+
+1. **Triage** — Detect project domains, profile input, score agents (base_score 0-3 + domain_boost 0-2 + project_bonus 0-1 + domain_agent 0-1), present roster for user approval
+2. **Launch** — Dispatch Stage 1 agents in parallel, monitor completion, optionally expand to Stage 2 based on findings severity + adjacency scoring
+3. **Synthesize** — Validate outputs, deduplicate findings, track convergence, compute verdict (safe/needs-changes/risky), generate findings.json + summary.md
+
+See `docs/spec/README.md` for the full protocol specification.
+
+### flux-research (Research Orchestration)
+
+Three-phase protocol: **Triage** → **Launch** → **Synthesize**.
+
+Uses a query-type affinity table to select research agents, dispatches in parallel, and synthesizes answers with source attribution. Progressive enhancement: uses Exa MCP for external research when available, falls back to Context7 + WebSearch.
+
+### Domain Detection
+
+Signal-based project classification using 4 signal types:
+- **Directory names** (weight 0.3) — `hooks/`, `agents/`, `game/`
+- **File patterns** (weight 0.2) — `plugin.json`, `SKILL.md`, `Cargo.toml`
+- **Framework keywords** (weight 0.3) — `claude-plugin`, `MCP`, `tokio`
+- **Content keywords** (weight 0.2) — `simulation`, `pipeline`, `endpoint`
+
+11 domains defined in `config/flux-drive/domains/`. Each domain profile contains review criteria, agent specs, and Research Directives for external research agents.
+
+### Knowledge Lifecycle
+
+Durable patterns from past reviews, stored in `config/flux-drive/knowledge/`:
+- **Provenance tracking** — `independent` (re-discovered without prompting) vs `primed` (re-confirmed while in context)
+- **Temporal decay** — entries not independently confirmed in 10 reviews are archived
+- **Injection** — top 5 relevant entries injected into agent prompts via semantic search (qmd)
+
+## MCP Servers
+
+| Server | Type | Purpose |
+|--------|------|---------|
+| **qmd** | stdio | Semantic search for project documentation. Used for knowledge injection and doc retrieval. |
+| **exa** | stdio | External web research via Exa API. Progressive enhancement — requires `EXA_API_KEY`. Falls back to Context7 + WebSearch if unavailable. |
+
+## Protocol Specification
+
+The flux-drive review protocol is formally specified in `docs/spec/` (flux-drive-spec 1.0.0). The spec extracts the abstract protocol from this reference implementation into standalone, framework-agnostic documents.
+
+Three conformance levels:
+- **Core** — 3-phase lifecycle, base scoring (0-4), staging, contracts, synthesis
+- **Core + Domains** — adds domain detection, domain_boost/domain_agent_bonus scoring (0-7)
+- **Core + Knowledge** — adds provenance-tracked review memory with temporal decay
+
+See `docs/spec/README.md` for the full document index and reading order.
+
+## Component Conventions
+
+### Review Agents (fd-*)
+
+- 7 agents, each auto-detects language from input
+- YAML frontmatter: `name`, `description` (with `<example>` blocks), `model: inherit`
+- Each reads project CLAUDE.md/AGENTS.md for codebase-aware review
+- Findings output uses the Findings Index contract: `SEVERITY | ID | "Section" | Title`
+- Verdict: `safe | needs-changes | risky`
+
+### Research Agents
+
+- 5 agents for different research tasks (best practices, framework docs, git history, learnings, repo analysis)
+- Orchestrated by flux-research skill, not invoked directly
+- Research Directives in domain profiles guide their search terms
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `/interflux:flux-drive` | Multi-agent document/code review |
+| `/interflux:flux-research` | Multi-agent research with source attribution |
+| `/interflux:flux-gen` | Generate project-specific review agents from detected domains |
+
+## Testing
+
+```bash
+# Run all structural tests (103 tests)
+cd /root/projects/Interflux && uv run pytest tests/ -q
+
+# Key test suites
+uv run pytest tests/structural/test_namespace.py -v  # Guards against stale clavain: refs
+uv run pytest tests/structural/test_agents.py -v     # Agent structure validation
+uv run pytest tests/structural/test_skills.py -v     # Skill structure validation
+uv run pytest tests/structural/test_slicing.py -v    # Content routing tests
+```
+
+## Validation Checklist
+
+```bash
+# Count components
+ls agents/review/*.md | wc -l         # Should be 7
+ls agents/research/*.md | wc -l       # Should be 5
+ls commands/*.md | wc -l              # Should be 3
+ls skills/*/SKILL.md | wc -l          # Should be 2
+
+# Domain profiles
+grep -l '## Research Directives' config/flux-drive/domains/*.md | wc -l  # Should be 11
+
+# Manifest
+python3 -c "import json; d=json.load(open('.claude-plugin/plugin.json')); print(list(d['mcpServers'].keys()))"  # ['qmd', 'exa']
+
+# Namespace check — no stale clavain: references
+uv run pytest tests/structural/test_namespace.py -v
+```
+
+## Known Constraints
+
+- **No build step** — pure markdown/JSON/Python/bash plugin
+- **Phase tracking is caller's responsibility** — Interflux commands do not source lib-gates.sh; Clavain's lfg pipeline handles phase transitions
+- **Exa requires API key** — set `EXA_API_KEY` env var; agents degrade gracefully without it
+- **qmd must be installed** — semantic search used for knowledge injection; if unavailable, reviews run without knowledge context
