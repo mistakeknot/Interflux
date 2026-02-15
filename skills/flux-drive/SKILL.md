@@ -253,6 +253,18 @@ Before scoring, eliminate agents that cannot plausibly score ≥1 based on the d
 
 4. **Game filter**: Skip fd-game-design unless Step 1.0.1 detected `game-simulation` domain OR the document/project mentions game, simulation, AI behavior, storyteller, balance, procedural generation, tick loop, needs/mood systems, or drama management.
 
+**For all input types (cognitive agent filter):**
+
+5. **Cognitive filter**: Skip fd-systems (and future cognitive agents: fd-decisions, fd-people, fd-resilience, fd-perception) unless ALL of these conditions are met:
+   - Input type is `file` or `directory` (NOT `diff`)
+   - File extension is `.md` or `.txt` (NOT code: `.go`, `.py`, `.ts`, `.tsx`, `.rs`, `.sh`, `.c`, `.java`, `.rb`)
+   - Document type matches: PRD, brainstorm, plan, strategy, vision, roadmap, architecture doc, or research document
+
+When cognitive agents pass the pre-filter, assign base_score using these heuristics:
+   - base_score 3: Document explicitly discusses systems, feedback, strategy, architecture decisions, or organizational dynamics
+   - base_score 2: Document is a PRD, brainstorm, or plan (general document review)
+   - base_score 1: Document is `.md` but content is primarily technical reference (API docs, changelogs)
+
 **For diff inputs** (use routing patterns from `phases/slicing.md`):
 
 1. **Data filter**: Skip fd-correctness unless any changed file matches its priority file patterns or any hunk contains its priority keywords.
@@ -262,6 +274,8 @@ Before scoring, eliminate agents that cannot plausibly score ≥1 based on the d
 5. **Game filter**: Skip fd-game-design unless any changed file matches its priority file patterns or any hunk contains its priority keywords.
 
 Domain-general agents always pass the filter: fd-architecture, fd-quality, and fd-performance (for file/directory inputs only — for diffs, fd-performance is filtered by routing patterns like other domain agents).
+
+Cognitive agents (fd-systems and future lens agents) are filtered separately by the cognitive filter above and are NEVER included for diff or code file inputs. Cognitive agents display as category `cognitive` in the triage table. Technical agents display as category `technical` (default).
 
 Present only passing agents in the scoring table below.
 
