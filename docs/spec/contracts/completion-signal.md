@@ -88,9 +88,9 @@ Retry is optional and implementation-specific. The contract only requires that:
 | No `.partial`, no `.md` | Agent never started. Generate error stub. |
 | `.md` exists, no sentinel | Agent used a different completion mechanism. Accept but log warning. |
 
-## Interflux Reference
+## interflux Reference
 
-In Interflux, completion monitoring is implemented in `skills/flux-drive/phases/launch.md` (Step 2.3). The implementation-level contract details are in `skills/flux-drive/phases/shared-contracts.md`. Local agents are dispatched via Claude Code's `Task` tool with `run_in_background: true`; remote agents (Oracle/Codex) are dispatched via CLI tools. The orchestrator uses `Bash(ls {OUTPUT_DIR}/*.md 2>/dev/null | wc -l)` for polling.
+In interflux, completion monitoring is implemented in `skills/flux-drive/phases/launch.md` (Step 2.3). The implementation-level contract details are in `skills/flux-drive/phases/shared-contracts.md`. Local agents are dispatched via Claude Code's `Task` tool with `run_in_background: true`; remote agents (Oracle/Codex) are dispatched via CLI tools. The orchestrator uses `Bash(ls {OUTPUT_DIR}/*.md 2>/dev/null | wc -l)` for polling.
 
 ## Conformance
 

@@ -1,4 +1,4 @@
-"""Shared fixtures for Interflux structural tests."""
+"""Shared fixtures for interflux structural tests."""
 
 import json
 from pathlib import Path
@@ -8,7 +8,7 @@ import pytest
 
 @pytest.fixture(scope="session")
 def project_root() -> Path:
-    """Path to the Interflux repository root."""
+    """Path to the interflux repository root."""
     return Path(__file__).resolve().parent.parent.parent
 
 

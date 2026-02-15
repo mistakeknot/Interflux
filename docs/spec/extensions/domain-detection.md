@@ -147,9 +147,9 @@ During Phase 2 (Launch), the orchestrator:
 3. Injects these as additional review bullets in each agent's prompt
 4. Orders by confidence (primary domain first), caps at 3 domains
 
-## Interflux Reference
+## interflux Reference
 
-In Interflux, domain detection is implemented in `scripts/detect-domains.py` (713 lines). Domain definitions live in `config/flux-drive/domains/index.yaml` (454 lines). Domain profiles with injection criteria are in `config/flux-drive/domains/*.md` — 11 profiles: game-simulation, ml-pipeline, web-api, cli-tool, mobile-app, embedded-systems, library-sdk, data-pipeline, claude-code-plugin, tui-app, desktop-tauri.
+In interflux, domain detection is implemented in `scripts/detect-domains.py` (713 lines). Domain definitions live in `config/flux-drive/domains/index.yaml` (454 lines). Domain profiles with injection criteria are in `config/flux-drive/domains/*.md` — 11 profiles: game-simulation, ml-pipeline, web-api, cli-tool, mobile-app, embedded-systems, library-sdk, data-pipeline, claude-code-plugin, tui-app, desktop-tauri.
 
 The script is invoked by the orchestrator during Phase 1, Step 1.0.1. Cache is written atomically (temp file + rename). Staleness is checked via `--check-stale` flag. Re-detection uses `--no-cache --json`.
 

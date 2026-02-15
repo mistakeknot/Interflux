@@ -1,4 +1,4 @@
-# Interflux — Development Guide
+# interflux — Development Guide
 
 Multi-agent review and research engine for Claude Code. Companion plugin for [Clavain](https://github.com/mistakeknot/Clavain).
 
@@ -6,7 +6,7 @@ Multi-agent review and research engine for Claude Code. Companion plugin for [Cl
 
 | Item | Value |
 |------|-------|
-| Repo | `https://github.com/mistakeknot/Interflux` |
+| Repo | `https://github.com/mistakeknot/interflux` |
 | Namespace | `interflux:` |
 | Manifest | `.claude-plugin/plugin.json` |
 | Components | 12 agents, 3 commands, 2 skills, 2 MCP servers |
@@ -15,7 +15,7 @@ Multi-agent review and research engine for Claude Code. Companion plugin for [Cl
 ## Architecture
 
 ```
-Interflux/
+interflux/
 ├── .claude-plugin/plugin.json     # Plugin manifest (name, version, MCP servers)
 ├── agents/
 │   ├── review/                    # 7 review agents (fd-*)
@@ -182,7 +182,7 @@ See `docs/spec/README.md` for the full document index and reading order.
 
 ```bash
 # Run all structural tests (103 tests)
-cd /root/projects/Interflux && uv run pytest tests/ -q
+cd /root/projects/Interverse/plugins/interflux && uv run pytest tests/ -q
 
 # Key test suites
 uv run pytest tests/structural/test_namespace.py -v  # Guards against stale clavain: refs
@@ -213,6 +213,6 @@ uv run pytest tests/structural/test_namespace.py -v
 ## Known Constraints
 
 - **No build step** — pure markdown/JSON/Python/bash plugin
-- **Phase tracking is caller's responsibility** — Interflux commands do not source lib-gates.sh; Clavain's lfg pipeline handles phase transitions
+- **Phase tracking is caller's responsibility** — interflux commands do not source lib-gates.sh; Clavain's lfg pipeline handles phase transitions
 - **Exa requires API key** — set `EXA_API_KEY` env var; agents degrade gracefully without it
 - **qmd must be installed** — semantic search used for knowledge injection; if unavailable, reviews run without knowledge context

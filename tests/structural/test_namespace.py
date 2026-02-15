@@ -60,9 +60,9 @@ def test_launch_uses_interflux_mcp(project_root: Path):
 
 
 def test_launch_uses_interflux_collection(project_root: Path):
-    """launch.md uses Interflux qmd collection name."""
+    """launch.md uses interflux qmd collection name."""
     launch = (project_root / "skills" / "flux-drive" / "phases" / "launch.md").read_text()
-    assert '"Interflux"' in launch
+    assert '"interflux"' in launch
 
 
 def test_flux_drive_command_uses_interflux(project_root: Path):

@@ -1,4 +1,4 @@
-# Interflux
+# interflux
 
 > See `AGENTS.md` for full development guide.
 
@@ -14,7 +14,7 @@ The flux-drive review protocol is documented in `docs/spec/` (flux-drive-spec 1.
 
 ```bash
 # Test locally
-claude --plugin-dir /root/projects/Interflux
+claude --plugin-dir /root/projects/Interverse/plugins/interflux
 
 # Validate structure
 ls skills/*/SKILL.md | wc -l          # Should be 2
@@ -31,8 +31,8 @@ python3 -c "import json; json.load(open('.claude-plugin/plugin.json'))"  # Manif
 - Namespace: `interflux:` (companion to Clavain)
 - 7 core review agents (fd-architecture, fd-safety, fd-correctness, fd-quality, fd-user-product, fd-performance, fd-game-design) — each auto-detects language
 - 5 research agents (best-practices-researcher, framework-docs-researcher, git-history-analyzer, learnings-researcher, repo-research-analyst) — orchestrated by flux-research
-- Phase tracking is the **caller's** responsibility — Interflux commands do not source lib-gates.sh
-- Knowledge compounding writes to Interflux's `config/flux-drive/knowledge/` directory
+- Phase tracking is the **caller's** responsibility — interflux commands do not source lib-gates.sh
+- Knowledge compounding writes to interflux's `config/flux-drive/knowledge/` directory
 - qmd MCP server provides semantic search for project documentation
 - Exa MCP server is a progressive enhancement — if `EXA_API_KEY` not set, agents fall back to Context7 + WebSearch
 - Research Directives in domain profiles guide external agents (best-practices, framework-docs) with domain-specific search terms

@@ -114,9 +114,9 @@ If an agent's output doesn't start with `### Findings Index` or the index lines 
 3. Report to user: "Agent {name} produced malformed index — using prose fallback"
 4. Include prose-extracted findings in synthesis, but mark them with lower confidence (they weren't structured)
 
-## Interflux Reference
+## interflux Reference
 
-In Interflux, the Findings Index contract is defined in `skills/flux-drive/phases/shared-contracts.md`. The synthesizer (`phases/synthesize.md`) parses indices in Step 3.1 (validation) and Step 3.2 (collection). ID prefixes follow the pattern of agent abbreviations: `AR` for architecture, `SF` for safety, `CR` for correctness, `QS` for quality, `UP` for user-product, `PF` for performance, `GD` for game-design.
+In interflux, the Findings Index contract is defined in `skills/flux-drive/phases/shared-contracts.md`. The synthesizer (`phases/synthesize.md`) parses indices in Step 3.1 (validation) and Step 3.2 (collection). ID prefixes follow the pattern of agent abbreviations: `AR` for architecture, `SF` for safety, `CR` for correctness, `QS` for quality, `UP` for user-product, `PF` for performance, `GD` for game-design.
 
 ## Conformance
 

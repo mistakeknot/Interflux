@@ -24,7 +24,7 @@ Before launching agents, retrieve relevant knowledge entries for each selected a
    ```
    Tool: mcp__plugin_interflux_qmd__vsearch
    Parameters:
-     collection: "Interflux"
+     collection: "interflux"
      query: "{agent domain} {document summary keywords}"
      path: "config/flux-drive/knowledge/"
      limit: 5

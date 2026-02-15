@@ -1,4 +1,4 @@
-"""Tests for Interflux agent structure."""
+"""Tests for interflux agent structure."""
 
 from pathlib import Path
 

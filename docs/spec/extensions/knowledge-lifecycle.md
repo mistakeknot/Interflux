@@ -119,11 +119,11 @@ If the semantic search system is unavailable, agents run without knowledge injec
 - **Confirmation:** Edit the frontmatter — set `lastConfirmed` to today, `provenance` to `independent`.
 - **Review all:** List files in the knowledge directory, inspect frontmatter for decay status.
 
-## Interflux Reference
+## interflux Reference
 
-In Interflux, knowledge entries live in `config/flux-drive/knowledge/*.md`. The lifecycle rules are documented in `config/flux-drive/knowledge/README.md` (79 lines). Retrieval uses the qmd MCP server for semantic search (`mcp__plugin_interflux_qmd__vsearch`). Knowledge injection happens in `skills/flux-drive/phases/launch.md` (Step 2.1). Content routing rules that affect knowledge injection are in `skills/flux-drive/phases/slicing.md`.
+In interflux, knowledge entries live in `config/flux-drive/knowledge/*.md`. The lifecycle rules are documented in `config/flux-drive/knowledge/README.md` (79 lines). Retrieval uses the qmd MCP server for semantic search (`mcp__plugin_interflux_qmd__vsearch`). Knowledge injection happens in `skills/flux-drive/phases/launch.md` (Step 2.1). Content routing rules that affect knowledge injection are in `skills/flux-drive/phases/slicing.md`.
 
-Archive directory: `config/flux-drive/knowledge/archive/`. Currently 6 active knowledge entries in the Interflux reference implementation.
+Archive directory: `config/flux-drive/knowledge/archive/`. Currently 6 active knowledge entries in the interflux reference implementation.
 
 ## Conformance
 

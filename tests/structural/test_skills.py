@@ -1,4 +1,4 @@
-"""Tests for Interflux skill structure."""
+"""Tests for interflux skill structure."""
 
 from pathlib import Path
 

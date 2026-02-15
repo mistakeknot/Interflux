@@ -1,4 +1,4 @@
-"""Tests for Interflux command structure."""
+"""Tests for interflux command structure."""
 
 from pathlib import Path
 

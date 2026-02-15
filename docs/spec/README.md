@@ -2,13 +2,13 @@
 
 **Version:** 1.0.0
 **Status:** Reference Architecture
-**Reference Implementation:** [Interflux](https://github.com/interflux) (Claude Code plugin)
+**Reference Implementation:** [interflux](https://github.com/interflux) (Claude Code plugin)
 
 ---
 
 ## What This Is
 
-Flux-drive is a **domain-aware multi-agent review protocol** — an algorithm for triaging, launching, and synthesizing parallel specialized reviews of documents, codebases, and diffs. This specification extracts the abstract protocol from the Interflux reference implementation into standalone, framework-agnostic documents.
+Flux-drive is a **domain-aware multi-agent review protocol** — an algorithm for triaging, launching, and synthesizing parallel specialized reviews of documents, codebases, and diffs. This specification extracts the abstract protocol from the interflux reference implementation into standalone, framework-agnostic documents.
 
 The protocol separates **static triage** (which agents are relevant?) from **dynamic expansion** (do early results justify more agents?) and uses **structured output contracts** to enable synthesis without parsing free-form prose.
 
@@ -16,9 +16,9 @@ The protocol separates **static triage** (which agents are relevant?) from **dyn
 
 This spec serves two audiences:
 
-- **AI tool developers** building multi-agent review systems — in any framework (Claude Code plugins, VS Code extensions, custom CLIs, API-based pipelines). The spec is framework-agnostic; Interflux-specific details are confined to "Interflux Reference" sections in each document.
+- **AI tool developers** building multi-agent review systems — in any framework (Claude Code plugins, VS Code extensions, custom CLIs, API-based pipelines). The spec is framework-agnostic; interflux-specific details are confined to "interflux Reference" sections in each document.
 
-- **Interflux/Clavain contributors** extending the existing system. The spec clarifies what the protocol requires vs. what the implementation happens to do, making it safer to modify without breaking the contract.
+- **interflux/Clavain contributors** extending the existing system. The spec clarifies what the protocol requires vs. what the implementation happens to do, making it safer to modify without breaking the contract.
 
 ## Documents
 
@@ -86,7 +86,7 @@ This spec uses [Semantic Versioning](https://semver.org/):
 - **Minor** (1.1, 1.2): New extensions, non-breaking additions to core
 - **Patch** (1.0.1, 1.0.2): Clarifications, typo fixes, example additions
 
-The spec version is independent of Interflux's version. An implementation conforming to "flux-drive-spec 1.0" works with any Interflux version that also conforms to 1.0.
+The spec version is independent of interflux's version. An implementation conforming to "flux-drive-spec 1.0" works with any interflux version that also conforms to 1.0.
 
 ## Reading Order
 

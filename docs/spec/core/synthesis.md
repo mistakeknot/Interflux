@@ -340,7 +340,7 @@ If an agent times out but wrote a `.partial` file:
 
 > **Why this works:** Graceful degradation. One agent failure shouldn't block the entire synthesis. Partial results are better than no results — they may still contain actionable findings.
 
-## Interflux Reference
+## interflux Reference
 
 **Implementation:**
 - Synthesis algorithm: `skills/flux-drive/phases/synthesize.md` (365 lines)

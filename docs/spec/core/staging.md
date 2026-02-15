@@ -206,7 +206,7 @@ Choice:
 - Not an error — synthesis includes Stage 1 + Stage 2 (empty set)
 - Findings Report notes: "Stage 2 agents found no additional issues"
 
-## Interflux Reference
+## interflux Reference
 
 **Implementation Locations:**
 

@@ -307,7 +307,7 @@ total:     6 slots
 - Stage 2: safety (2), quality (2)
 - Expansion pool: none
 
-## Interflux Reference
+## interflux Reference
 
 ### Implementation Files
 

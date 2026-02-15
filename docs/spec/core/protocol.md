@@ -547,7 +547,7 @@ flowchart TD
 
 ---
 
-## Interflux Reference
+## interflux Reference
 
 ### Implementation Files
 
@@ -568,7 +568,7 @@ flowchart TD
 - **Findings collector**: Synthesis engine (parse, deduplicate, verdict)
 - **Domain classifier**: Signal-based detector (directory/file/keyword matching)
 
-> **Why abstractions matter:** flux-drive protocol is runtime-agnostic. Interflux implements it with Claude Code subagents, but the spec applies to any multi-agent system (API-based agents, local models, hybrid).
+> **Why abstractions matter:** flux-drive protocol is runtime-agnostic. interflux implements it with Claude Code subagents, but the spec applies to any multi-agent system (API-based agents, local models, hybrid).
 
 ---
 

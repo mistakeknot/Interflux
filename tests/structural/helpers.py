@@ -1,4 +1,4 @@
-"""Shared helpers for Interflux structural tests."""
+"""Shared helpers for interflux structural tests."""
 
 import yaml
 
