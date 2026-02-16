@@ -20,8 +20,8 @@ def _get_agent_files(agents_dir: Path) -> list[Path]:
 def test_agent_count(agents_dir):
     """Total agent count matches expected value."""
     agent_files = _get_agent_files(agents_dir)
-    assert len(agent_files) == 12, (
-        f"Expected 12 agents, found {len(agent_files)}: "
+    assert len(agent_files) == 13, (
+        f"Expected 13 agents, found {len(agent_files)}: "
         f"{[f.stem for f in agent_files]}"
     )
 
@@ -37,11 +37,11 @@ def test_agent_is_nonempty(agent_file):
 
 
 def test_all_fd_agents_present(agents_dir):
-    """All 7 fd-* agents exist."""
+    """All 8 fd-* agents exist."""
     expected = [
         "fd-architecture", "fd-safety", "fd-correctness",
         "fd-quality", "fd-user-product", "fd-performance",
-        "fd-game-design",
+        "fd-game-design", "fd-systems",
     ]
     review_dir = agents_dir / "review"
     for name in expected:
