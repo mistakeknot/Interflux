@@ -59,7 +59,7 @@ If docs do not exist, operate in generic mode:
 
 ## Key Lenses
 
-<!-- Curated from Linsenkasten's Resilience & Adaptation, Creative Problem Solving, Boundaries & Constraints,
+<!-- Curated from Interlens's Resilience & Adaptation, Creative Problem Solving, Boundaries & Constraints,
      Innovation & Creation, Innovation & Creative Destruction, Crisis & Opportunity, and Resource Dynamics & Constraints frames.
      These 12 (of 288 total) were selected because they form a complete adaptive capacity analysis toolkit:
      3 for resilience/antifragility, 3 for creative constraints, 3 for resource dynamics, 3 for innovation patterns.
@@ -102,7 +102,7 @@ P0 is reserved for cases where missing resilience analysis creates immediate, co
 
 ## MCP Enhancement (Optional)
 
-If the Linsenkasten MCP server is available (tools like `search_lenses`, `detect_thinking_gaps` are listed in available tools), enhance your review:
+If the Interlens MCP server is available (tools like `search_lenses`, `detect_thinking_gaps` are listed in available tools), enhance your review:
 
 1. **Per-section lens search**: For each section you review, call `search_lenses` with 2-3 keywords from that section to find relevant lenses beyond the hardcoded Key Lenses above
 2. **Gap detection**: After completing your review, call `detect_thinking_gaps` with a summary of the lenses you applied to identify uncovered analytical frames
@@ -110,7 +110,7 @@ If the Linsenkasten MCP server is available (tools like `search_lenses`, `detect
 
 **When MCP is unavailable** (tools not listed, or calls fail): Use the hardcoded Key Lenses above as your complete lens set. Include a NOTE finding at the end of your review:
 
-> **NOTE**: MCP server unavailable — review used fallback lens subset (12/288 lenses). Install linsenkasten-mcp for full coverage.
+> **NOTE**: MCP server unavailable — review used fallback lens subset (12/288 lenses). Install interlens-mcp for full coverage.
 
 MCP is an enhancement, not a requirement. The hardcoded Key Lenses are sufficient for a thorough review.
 

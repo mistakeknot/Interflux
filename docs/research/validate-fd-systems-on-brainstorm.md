@@ -1,6 +1,6 @@
-# Systems Thinking Review: Linsenkasten Flux-Agents Brainstorm
+# Systems Thinking Review: Interlens Flux-Agents Brainstorm
 
-**Document:** `/root/projects/Interverse/docs/brainstorms/2026-02-15-linsenkasten-flux-agents-brainstorm.md`
+**Document:** `/root/projects/Interverse/docs/brainstorms/2026-02-15-interlens-flux-agents-brainstorm.md`
 **Reviewer:** fd-lens-systems (meta-review)
 **Date:** 2026-02-15
 **Status:** Complete

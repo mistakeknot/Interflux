@@ -1,6 +1,6 @@
-# Flux-Drive Systems Thinking Review: Linsenkasten Flux Agents PRD
+# Flux-Drive Systems Thinking Review: Interlens Flux Agents PRD
 
-**Document:** `/root/projects/Interverse/docs/prds/2026-02-15-linsenkasten-flux-agents.md`
+**Document:** `/root/projects/Interverse/docs/prds/2026-02-15-interlens-flux-agents.md`
 **Reviewer:** fd-systems (Systems Thinking Lens Agent)
 **Date:** 2026-02-15
 **Mode:** Codebase-aware (Interverse monorepo context)
@@ -47,7 +47,7 @@ Lines 73-76 define pre-filter rules that exclude lens agents from code reviews b
 
 ---
 
-### P2 | FD-SYS-004 | "Features → F3: Linsenkasten MCP Wiring" | Bullwhip Effect in Lens Retrieval
+### P2 | FD-SYS-004 | "Features → F3: Interlens MCP Wiring" | Bullwhip Effect in Lens Retrieval
 
 Lines 85-89 describe conditional MCP integration: agents call `search_lenses` and `detect_thinking_gaps` if MCP is available, otherwise fall back to hardcoded lenses. This creates a **two-mode system** where review depth varies wildly based on environment state, amplifying small differences in setup.
 
@@ -83,7 +83,7 @@ Lines 95-98 specify that synthesis treats "cognitive P1/P2/P3 identically to tec
 
 ---
 
-### P3 | FD-SYS-007 | "Non-goals → Domain profile for linsenkasten" | Schelling Trap in Cross-Domain Universality
+### P3 | FD-SYS-007 | "Non-goals → Domain profile for interlens" | Schelling Trap in Cross-Domain Universality
 
 Line 111 explicitly states lens agents are "cross-domain (apply to all document reviews)" and rejects domain-specific profiles. This universality assumption creates a **Schelling trap**: lens agents will converge toward **generic cognitive frameworks** that apply everywhere but provide shallow insight, rather than developing domain-adapted heuristics.
 
@@ -125,7 +125,7 @@ Lines 123-124 identify demand risk ("no validated user demand") and mitigate wit
 1. **Phased delivery with kill gate (Phase 0 → 1)** — excellent application of fail-fast principle
 2. **Explicit non-goals** — prevents scope creep
 3. **Dependency tracking** — clear prerequisite chains
-4. **Separation of concerns** — lens agents in interflux, knowledge base in linsenkasten (good architectural partitioning)
+4. **Separation of concerns** — lens agents in interflux, knowledge base in interlens (good architectural partitioning)
 
 ## Meta-Observation
 
