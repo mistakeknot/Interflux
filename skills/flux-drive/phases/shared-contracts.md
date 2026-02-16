@@ -29,6 +29,39 @@ Each agent writes to `{OUTPUT_DIR}/{agent-name}.md` with this structure:
 - Rename `.md.partial` to `.md` as the final action
 - Orchestrator detects completion by checking for `.md` files (not `.partial`)
 
+## Verdict Header (Universal)
+
+All agents (flux-drive reviewers and Codex dispatches) append a verdict header as the **last block** of their output. This enables the orchestrator to read only the tail of the file for a structured summary.
+
+### Format
+
+```
+--- VERDICT ---
+STATUS: pass|fail|warn|error
+FILES: N changed
+FINDINGS: N (P0: n, P1: n, P2: n)
+SUMMARY: <1-2 sentence verdict>
+---
+```
+
+### Rules
+
+- The header is the last 7 lines of the output file (including the `---` delimiters)
+- For flux-drive agents: STATUS maps from Verdict line (safe->pass, needs-changes->warn, risky->fail, error->error)
+- For Codex agents: STATUS is CLEAN->pass, NEEDS_ATTENTION->warn, error->error
+- FILES count: number of files modified by the agent (0 for review-only agents)
+- FINDINGS count: total findings from the Findings Index (0 if no issues)
+- SUMMARY: 1-2 sentences, no line breaks
+
+### Extraction
+
+The orchestrator extracts the verdict with `tail -7` on the output file. This avoids reading the full prose body into context.
+
+For flux-drive reviews, the orchestrator reads:
+- Findings Index (first ~30 lines via `head`)
+- Verdict Header (last 7 lines via `tail`)
+- Total: ~37 lines per agent regardless of prose length
+
 ## Error Stub Format
 
 When an agent fails after retry:
