@@ -88,7 +88,15 @@ Write the full document content. All agents reference this single file.
 
 #### Case 2: File/directory inputs — document slicing active (>= 200 lines)
 
-See `phases/slicing.md` → Document Slicing → Per-Agent Temp File Construction for file naming, structure, and pyramid summary rules.
+1. **Classify sections:** Invoke clodex MCP `classify_sections` tool with `file_path` set to the document path.
+2. **Check result:** If `status` is `"no_classification"`, fall back to Case 1 (all agents get the original file via shared path).
+3. **Generate per-agent files:** For each agent in `slicing_map`:
+   - If agent is cross-cutting (fd-architecture, fd-quality): use the shared `REVIEW_FILE` from Case 1.
+   - If agent has zero priority sections: skip dispatching this agent entirely.
+   - Otherwise: write the per-agent temp file following `phases/slicing.md` → Per-Agent Temp File Construction. File pattern: `/tmp/flux-drive-${INPUT_STEM}-${TS}-${agent}.md`
+4. **Record all paths:** Store `REVIEW_FILE_${agent}` paths for prompt construction in Step 2.2.
+
+See `phases/slicing.md` → Document Slicing for the complete classification algorithm, per-agent file structure, and pyramid summary rules.
 
 #### Case 3: Diff inputs — no slicing (< 1000 lines or cross-cutting)
 

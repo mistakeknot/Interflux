@@ -186,7 +186,21 @@ For documents under 200 lines, skip section slicing entirely — all agents rece
 
 ### Section Classification
 
-1. **Extract sections** — Split document by `##` headings. Each section = heading + content until next heading.
+#### Classification Methods
+
+**Method 1: Semantic (Codex Spark)** — preferred when clodex MCP is available.
+
+1. **Extract sections** — Invoke clodex `extract_sections` tool on the document file. Returns structured JSON with section IDs, headings, and line counts.
+2. **Classify per agent** — Invoke clodex `classify_sections` tool. Codex spark assigns each section to each agent as `priority` or `context` with a confidence score (0.0-1.0).
+3. **Cross-cutting agents** (fd-architecture, fd-quality) — always receive the full document. Skip classification for these agents.
+4. **Safety override** — Any section mentioning auth, credentials, secrets, tokens, or certificates is always `priority` for fd-safety (enforced in classification prompt).
+5. **80% threshold** — If `agent_priority_lines * 100 / total_lines >= 80` (integer arithmetic), skip slicing for that agent — send full document.
+6. **Domain mismatch guard** — If no agent receives >10% of total lines as priority, classification likely failed. Fall back to full document for all agents.
+7. **Zero priority skip** — If an agent has zero priority sections, do not dispatch that agent at all.
+
+**Method 2: Keyword Matching** — fallback when Codex spark is unavailable or returns low-confidence (<0.6 average).
+
+1. **Extract sections** — Split document by `## ` headings. Each section = heading + content until next heading.
 2. **Classify per agent** — For each selected **domain-specific** agent, classify each section:
    - `priority` — section heading or body matches any of the agent's keywords → include in full
    - `context` — no keyword match → include as 1-line summary only
@@ -194,7 +208,9 @@ For documents under 200 lines, skip section slicing entirely — all agents rece
 4. **Safety override** — Any section mentioning auth, credentials, secrets, tokens, or certificates is always `priority` for fd-safety.
 5. **80% threshold** — If an agent's priority sections cover >= 80% of total document lines, skip slicing for that agent (send full document).
 
-A section is `priority` for an agent if:
+**Composition rule:** Try Method 1 first. If `classify_sections` returns `status: "no_classification"` or average confidence < 0.6, fall back to Method 2.
+
+A section is `priority` for an agent under Method 2 if:
 - The section heading matches any of the agent's keywords (case-insensitive substring)
 - The section body contains any of the agent's keywords (sampled — first 50 lines)
 

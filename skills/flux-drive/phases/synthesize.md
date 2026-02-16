@@ -138,6 +138,11 @@ Use the Write tool to create this file. The orchestrator generates this from the
 
 **Verdict logic**: If any finding is P0 → "risky". If any P1 → "needs-changes". Otherwise → "safe".
 
+**Convergence with document slicing:** When document slicing is active (`slicing_map` available from Phase 2), adjust convergence scoring:
+- Only count agents that received the relevant section as `priority` when computing convergence counts. An agent that only saw a context summary cannot meaningfully converge on the same finding.
+- If 2+ agents agree on a finding AND reviewed different priority sections (per `slicing_map`), boost the convergence score by 1. Cross-section agreement is higher confidence than same-section agreement. Tag with `"slicing_boost": true` in findings.json.
+- Track "Request full section" annotations: count total across all agent outputs. Quality target: ≤5% of agent outputs contain section requests after 10 reviews. Include this request verbatim in synthesis output (v1 — do NOT re-dispatch or re-read sections).
+
 ### Step 3.5: Report to User
 
 Present the synthesis report using this exact structure. Fill in each section from the collected findings.
