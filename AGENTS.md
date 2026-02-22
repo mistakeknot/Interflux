@@ -100,7 +100,7 @@ interflux/
 │           ├── domain-detection.md # Weighted signal scoring
 │           └── knowledge-lifecycle.md # Review memory with decay
 ├── scripts/
-│   ├── detect-domains.py          # Domain heuristic fallback (offline scoring)
+│   ├── content-hash.py            # Deterministic content hash for cache staleness
 │   ├── generate-agents.py         # Deterministic agent file generation from domain profiles
 │   ├── update-domain-profiles.py  # Regenerate domain profiles
 │   └── validate-roster.sh        # Validate agent roster consistency
@@ -110,7 +110,7 @@ interflux/
         ├── helpers.py
         ├── test_agents.py
         ├── test_commands.py
-        ├── test_detect_domains.py
+        ├── test_content_hash.py       # Tests for content hash helper
         ├── test_generate_agents.py  # 23 tests for agent file generation
         ├── test_namespace.py      # Guards against stale clavain: refs
         ├── test_skills.py
@@ -137,9 +137,7 @@ Uses a query-type affinity table to select research agents, dispatches in parall
 
 ### Domain Detection
 
-**Primary:** LLM-based classification — a Haiku subagent reads README + build files + key source files and classifies the project into 11 known domains. Cached in `.claude/flux-drive.yaml` with `content_hash` for staleness detection.
-
-**Fallback:** Heuristic scoring via `scripts/detect-domains.py` — signal-based classification using directory names, file patterns, framework keywords, and content keywords. Used when LLM is unavailable.
+LLM-based classification — a Haiku subagent reads README + build files + key source files and classifies the project into 11 known domains. Cached in `.claude/flux-drive.yaml` with `content_hash` for staleness detection. Staleness computed deterministically by `scripts/content-hash.py`.
 
 11 domains defined in `config/flux-drive/domains/`. Each domain profile contains review criteria, agent specs, and Research Directives for external research agents.
 

@@ -86,10 +86,13 @@ def parse_agent_specs(profile_path: Path, domain: str) -> list[dict[str, Any]]:
     """
     text = profile_path.read_text(encoding="utf-8")
 
-    # Find the Agent Specifications section
+    # Strip fenced code blocks to avoid matching headings inside them
+    text_no_code = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+
+    # Find the Agent Specifications section (tolerant of trailing whitespace)
     agent_section_match = re.search(
-        r"^## Agent Specifications\s*\n(.*?)(?=^## |\Z)",
-        text,
+        r"^## Agent Specifications[ \t]*\n(.*?)(?=^## |\Z)",
+        text_no_code,
         re.MULTILINE | re.DOTALL,
     )
     if not agent_section_match:
@@ -98,7 +101,8 @@ def parse_agent_specs(profile_path: Path, domain: str) -> list[dict[str, Any]]:
     section_text = agent_section_match.group(1)
 
     # Split into individual agent subsections by ### fd-*
-    agent_blocks = re.split(r"^### (fd-[\w-]+)\s*$", section_text, flags=re.MULTILINE)
+    # Tolerant of trailing whitespace on heading lines
+    agent_blocks = re.split(r"^### (fd-[\w-]+)[ \t]*$", section_text, flags=re.MULTILINE)
     # agent_blocks[0] is the preamble text before the first ### fd-*
     # Then alternating: name, content, name, content, ...
 
@@ -114,59 +118,55 @@ def parse_agent_specs(profile_path: Path, domain: str) -> list[dict[str, Any]]:
             continue
 
         spec = _parse_single_agent(content, name, domain)
+        if not spec.get("focus"):
+            # Warn but still include — allows manual fixing
+            print(
+                f"Warning: {profile_path.name}: agent {name} has no Focus line",
+                file=sys.stderr,
+            )
         specs.append(spec)
 
     return specs
 
 
+def _extract_field(content: str, field_name: str) -> str | None:
+    """Extract a single-line field value, tolerant of bold/italic formatting.
+
+    Matches: ``Focus: value``, ``**Focus:** value``, ``*Focus:* value``
+    """
+    pattern = rf"^\**{re.escape(field_name)}:?\**:?\s*(.+)$"
+    match = re.search(pattern, content, re.MULTILINE)
+    return match.group(1).strip() if match else None
+
+
+def _extract_bullet_list(content: str, field_name: str) -> list[str]:
+    """Extract a bullet list following a field label.
+
+    Tolerates both ``- `` and ``* `` bullet markers, and optional
+    bold/italic on the field label.
+    """
+    pattern = rf"^\**{re.escape(field_name)}:?\**:?\s*\n((?:[\-\*] .+\n?)+)"
+    match = re.search(pattern, content, re.MULTILINE)
+    if not match:
+        return []
+    items: list[str] = []
+    for line in match.group(1).strip().splitlines():
+        line = line.strip()
+        if line.startswith(("- ", "* ")):
+            items.append(line[2:].strip())
+    return items
+
+
 def _parse_single_agent(content: str, name: str, domain: str) -> dict[str, Any]:
     """Parse a single agent subsection content into a spec dict."""
-    # Extract Focus line
-    focus_match = re.search(r"^Focus:\s*(.+)$", content, re.MULTILINE)
-    focus = focus_match.group(1).strip() if focus_match else ""
-
-    # Extract Persona line
-    persona_match = re.search(r"^Persona:\s*(.+)$", content, re.MULTILINE)
-    persona = persona_match.group(1).strip() if persona_match else None
-
-    # Extract Decision lens line
-    lens_match = re.search(r"^Decision lens:\s*(.+)$", content, re.MULTILINE)
-    decision_lens = lens_match.group(1).strip() if lens_match else None
-
-    # Extract Key review areas (bullet list)
-    review_areas: list[str] = []
-    review_match = re.search(
-        r"^Key review areas:\s*\n((?:- .+\n?)+)",
-        content,
-        re.MULTILINE,
-    )
-    if review_match:
-        for line in review_match.group(1).strip().splitlines():
-            line = line.strip()
-            if line.startswith("- "):
-                review_areas.append(line[2:].strip())
-
-    # Extract Success criteria hints (optional bullet list)
-    success_hints: list[str] = []
-    hints_match = re.search(
-        r"^Success criteria hints:\s*\n((?:- .+\n?)+)",
-        content,
-        re.MULTILINE,
-    )
-    if hints_match:
-        for line in hints_match.group(1).strip().splitlines():
-            line = line.strip()
-            if line.startswith("- "):
-                success_hints.append(line[2:].strip())
-
     return {
         "name": name,
         "domain": domain,
-        "focus": focus,
-        "persona": persona,
-        "decision_lens": decision_lens,
-        "review_areas": review_areas,
-        "success_hints": success_hints,
+        "focus": _extract_field(content, "Focus") or "",
+        "persona": _extract_field(content, "Persona"),
+        "decision_lens": _extract_field(content, "Decision lens"),
+        "review_areas": _extract_bullet_list(content, "Key review areas"),
+        "success_hints": _extract_bullet_list(content, "Success criteria hints"),
     }
 
 
@@ -338,21 +338,29 @@ def _parse_frontmatter(path: Path) -> dict[str, Any] | None:
     """Parse YAML frontmatter from a markdown file.
 
     Returns the parsed dict, or None if no valid frontmatter found.
+    Tolerates leading whitespace/BOM and requires the closing --- on its own line.
     """
     try:
         text = path.read_text(encoding="utf-8")
     except OSError:
         return None
 
+    # Strip BOM if present
+    text = text.lstrip("\ufeff")
+
     if not text.startswith("---"):
         return None
 
-    end = text.find("---", 3)
+    # Find closing --- that starts on its own line
+    end = text.find("\n---", 3)
     if end == -1:
         return None
 
     try:
-        return yaml.safe_load(text[3:end])
+        data = yaml.safe_load(text[3:end])
+        if not isinstance(data, dict):
+            return None
+        return data
     except yaml.YAMLError:
         return None
 
@@ -539,7 +547,7 @@ def main() -> int:
         else:
             for err in report.get("errors", []):
                 print(f"Error: {err}", file=sys.stderr)
-            print("No domains detected. Run detect-domains.py first.", file=sys.stderr)
+            print("No domains detected. Run LLM domain detection first (flux-drive Step 1.0.1).", file=sys.stderr)
         return 1
 
     if args.json_output:

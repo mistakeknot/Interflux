@@ -27,11 +27,9 @@ Where `{query-slug}` is the research question converted to kebab-case (max 50 ch
 
 Check for domain context that can sharpen research queries:
 
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/detect-domains.py --check-stale 2>/dev/null || true
-```
-
 If a `{PROJECT_ROOT}/.claude/flux-drive.yaml` cache exists, read the detected domains. For each detected domain, load `${CLAUDE_PLUGIN_ROOT}/config/flux-drive/domains/{domain-name}.md` and extract the `## Research Directives` section (if present).
+
+If no cache exists, run flux-drive's LLM domain detection (Step 1.0.1 in flux-drive SKILL.md) to populate it.
 
 **Fallback**: If no domains detected or no Research Directives sections exist, skip domain injection — agents run with the raw query only.
 

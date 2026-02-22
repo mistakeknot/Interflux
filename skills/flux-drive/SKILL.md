@@ -113,12 +113,16 @@ Launch a Haiku subagent to classify the project:
    - If no domain matches above 0.3, return {"domains": []}
    ```
 
-3. Parse the JSON response. Write cache to `{PROJECT_ROOT}/.claude/flux-drive.yaml`:
+3. Parse the JSON response. Compute content hash:
+   ```bash
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/content-hash.py {PROJECT_ROOT}
+   ```
+   Write cache to `{PROJECT_ROOT}/.claude/flux-drive.yaml`:
    ```yaml
    cache_version: 2
    source: llm
    detected_at: '2026-02-22T12:00:00+00:00'
-   content_hash: 'sha256:<hash of files read by LLM>'
+   content_hash: '<output from content-hash.py>'
    domains:
      - name: game-simulation
        confidence: 0.85
@@ -129,17 +133,7 @@ Launch a Haiku subagent to classify the project:
        reasoning: "Has CLI entry point for development tools"
    ```
 
-**Heuristic fallback** (when Haiku call fails — timeout, API error, or unparseable response):
-
-Run the legacy heuristic detector:
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/detect-domains.py {PROJECT_ROOT} --json
-```
-- Exit 0: use output, mark `source: heuristic` in cache
-- Exit 1: no domains detected, proceed with core agents only
-- Exit 2: script error, proceed with core agents only
-
-Log: `"Domain detection: LLM unavailable, using heuristic fallback."`
+**If Haiku call fails** (timeout, API error, or unparseable response): proceed with core agents only (no domain-specific agents). Log: `"Domain detection: LLM unavailable, proceeding with core agents only."`
 
 **Performance budget:** Detection should complete in <5 seconds. Cache check is <10ms.
 
@@ -147,13 +141,17 @@ Log: `"Domain detection: LLM unavailable, using heuristic fallback."`
 
 ### Step 1.0.2: Check Staleness
 
-Check if cached domain detection is outdated by comparing content hashes.
+Check if cached domain detection is outdated using the deterministic content hash helper.
 
 1. Read `content_hash` from `{PROJECT_ROOT}/.claude/flux-drive.yaml`
-2. If no `content_hash` field (old cache format or heuristic source): cache is stale, proceed to Step 1.0.3
-3. Re-hash the same files (README + build file + key source files) using SHA-256
-4. If hashes match: cache is fresh, proceed to Step 1.1
-5. If hashes differ: cache is stale, proceed to Step 1.0.3
+2. If no `content_hash` field (old cache format): cache is stale, proceed to Step 1.0.3
+3. Run the hash helper to compare:
+   ```bash
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/content-hash.py {PROJECT_ROOT} --check <cached_hash>
+   ```
+   - Exit 0: cache is fresh, proceed to Step 1.1
+   - Exit 1: cache is stale (hash mismatch or no hashable files), proceed to Step 1.0.3
+   - Exit 2: script error, treat as stale, proceed to Step 1.0.3
 
 ### Step 1.0.3: Re-detect
 
