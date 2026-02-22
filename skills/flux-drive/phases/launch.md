@@ -9,7 +9,7 @@ mkdir -p {OUTPUT_DIR}  # Must be absolute, e.g. /root/projects/Foo/docs/research
 
 Then enforce run isolation before dispatch:
 ```bash
-find {OUTPUT_DIR} -maxdepth 1 -type f \( -name "*.md" -o -name "*.md.partial" \) -delete
+find {OUTPUT_DIR} -maxdepth 1 -type f \( -name "*.md" -o -name "*.md.partial" -o -name "peer-findings.jsonl" \) -delete
 ```
 
 Use a timestamped `OUTPUT_DIR` only when you intentionally need to preserve previous run artifacts.
@@ -125,6 +125,14 @@ REVIEW_FILE="/tmp/flux-drive-${INPUT_STEM}-${TS}.diff"
 See `phases/slicing.md` → Diff Slicing → Per-Agent Temp File Construction for file naming and structure.
 
 Record all REVIEW_FILE paths for use in prompt construction (Step 2.2).
+
+**Peer findings template variables** (used in the Peer Findings Protocol section of the prompt template):
+```
+FINDINGS_HELPER = ${CLAUDE_PLUGIN_ROOT}/scripts/findings-helper.sh
+AGENT_NAME = <the agent's short name, e.g., fd-safety>
+```
+
+The orchestrator performs string substitution when building the Task prompt — replacing `{FINDINGS_HELPER}` with the absolute path and `{AGENT_NAME}` with the agent's short name. Same pattern as `{OUTPUT_DIR}` and `{REVIEW_FILE}`.
 
 ### Step 2.2: Stage 1 — Launch top agents
 
@@ -437,6 +445,46 @@ If you encounter a pattern, library, or practice during review where external co
 - Do NOT escalate for general knowledge you already have — only for project-specific or version-specific facts
 - Maximum 1 research escalation per review (budget constraint)
 - Include the research result in your finding as "Context: [source] confirms/contradicts..."
+
+## Peer Findings Protocol
+
+Other reviewer agents are analyzing this artifact in parallel. You can share and receive high-severity findings via a shared findings file.
+
+**Findings file**: `{OUTPUT_DIR}/peer-findings.jsonl`
+
+### Writing findings (during your analysis)
+
+When you discover a finding that other agents should know about, append it to the findings file. Only share findings at these severity levels:
+
+- **blocking** — contradicts or invalidates another agent's likely analysis (e.g., "this API endpoint doesn't exist", "this data model was removed")
+- **notable** — significant finding that may affect other agents' conclusions (e.g., "no authentication on admin endpoints", "critical race condition in shared state")
+
+Do NOT share informational or improvement-level findings — those belong only in your report.
+
+To write a finding, use the Bash tool:
+```bash
+bash {FINDINGS_HELPER} write "{OUTPUT_DIR}/peer-findings.jsonl" "<severity>" "{AGENT_NAME}" "<category>" "<summary>" "<file_ref1>" "<file_ref2>"
+```
+
+Where:
+- `<severity>` is `blocking` or `notable`
+- `<category>` is a short kebab-case tag (e.g., `api-conflict`, `auth-bypass`, `race-condition`)
+- `<summary>` is a 1-2 sentence description
+- `<file_ref>` entries are optional `file:line` references
+
+### Reading peer findings (before your final report)
+
+**Before writing your final report**, check for peer findings:
+
+```bash
+bash {FINDINGS_HELPER} read "{OUTPUT_DIR}/peer-findings.jsonl"
+```
+
+For each finding returned:
+- **blocking**: You MUST acknowledge it in your report. If it affects your domain, adjust your analysis accordingly.
+- **notable**: Consider whether it changes any of your recommendations. Note it if relevant.
+
+If the findings file doesn't exist or is empty, proceed normally — you may be the first agent to finish.
 ```
 
 After each stage launch, tell the user:

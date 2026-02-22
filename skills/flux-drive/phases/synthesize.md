@@ -38,6 +38,7 @@ Task(intersynth:synthesize-review):
     VERDICT_LIB={CLAUDE_PLUGIN_ROOT}/../../hub/clavain/hooks/lib-verdict.sh
     MODE=flux-drive
     CONTEXT="Reviewing {INPUT_TYPE}: {INPUT_STEM} ({N} agents, {early_stop_note})"
+    FINDINGS_TIMELINE={OUTPUT_DIR}/peer-findings.jsonl
 ```
 
 The intersynth agent handles validation, collection, deduplication, verdict writing, and report generation. It writes `{OUTPUT_DIR}/summary.md` and `{OUTPUT_DIR}/findings.json`, then returns a compact ~15-line summary.

@@ -9,7 +9,7 @@ Multi-agent review and research engine for Claude Code. Companion plugin for [Cl
 | Repo | `https://github.com/mistakeknot/interflux` |
 | Namespace | `interflux:` |
 | Manifest | `.claude-plugin/plugin.json` |
-| Components | 13 agents (8 review + 5 research), 3 commands, 2 skills, 2 MCP servers, 1 hook |
+| Components | 17 agents (12 review + 5 research), 4 commands, 2 skills, 2 MCP servers, 1 hook |
 | License | MIT |
 
 ### Release workflow
@@ -100,16 +100,18 @@ interflux/
 │           ├── domain-detection.md # Weighted signal scoring
 │           └── knowledge-lifecycle.md # Review memory with decay
 ├── scripts/
-│   ├── detect-domains.py          # Domain profile scoring (deterministic)
+│   ├── detect-domains.py          # Domain heuristic fallback (offline scoring)
+│   ├── generate-agents.py         # Deterministic agent file generation from domain profiles
 │   ├── update-domain-profiles.py  # Regenerate domain profiles
 │   └── validate-roster.sh        # Validate agent roster consistency
 └── tests/
-    └── structural/               # 103 pytest tests
+    └── structural/               # 120 pytest tests
         ├── conftest.py
         ├── helpers.py
         ├── test_agents.py
         ├── test_commands.py
         ├── test_detect_domains.py
+        ├── test_generate_agents.py  # 23 tests for agent file generation
         ├── test_namespace.py      # Guards against stale clavain: refs
         ├── test_skills.py
         └── test_slicing.py
@@ -135,13 +137,15 @@ Uses a query-type affinity table to select research agents, dispatches in parall
 
 ### Domain Detection
 
-Signal-based project classification using 4 signal types:
-- **Directory names** (weight 0.3) — `hooks/`, `agents/`, `game/`
-- **File patterns** (weight 0.2) — `plugin.json`, `SKILL.md`, `Cargo.toml`
-- **Framework keywords** (weight 0.3) — `claude-plugin`, `MCP`, `tokio`
-- **Content keywords** (weight 0.2) — `simulation`, `pipeline`, `endpoint`
+**Primary:** LLM-based classification — a Haiku subagent reads README + build files + key source files and classifies the project into 11 known domains. Cached in `.claude/flux-drive.yaml` with `content_hash` for staleness detection.
+
+**Fallback:** Heuristic scoring via `scripts/detect-domains.py` — signal-based classification using directory names, file patterns, framework keywords, and content keywords. Used when LLM is unavailable.
 
 11 domains defined in `config/flux-drive/domains/`. Each domain profile contains review criteria, agent specs, and Research Directives for external research agents.
+
+### Agent Generation
+
+`scripts/generate-agents.py` reads cached domain classification + domain profile markdown → writes `.claude/agents/fd-*.md` files. Deterministic template expansion (no LLM involvement). Three modes: `skip-existing`, `regenerate-stale` (checks `flux_gen_version` in frontmatter), `force`.
 
 ### Knowledge Lifecycle
 
@@ -149,6 +153,22 @@ Durable patterns from past reviews, stored in `config/flux-drive/knowledge/`:
 - **Provenance tracking** — `independent` (re-discovered without prompting) vs `primed` (re-confirmed while in context)
 - **Temporal decay** — entries not independently confirmed in 10 reviews are archived
 - **Injection** — top 5 relevant entries injected into agent prompts via semantic search (qmd)
+
+## Intermediate Finding Sharing
+
+During parallel flux-drive reviews, agents can share high-severity findings via `{OUTPUT_DIR}/peer-findings.jsonl`.
+
+**Severity levels:**
+- `blocking` — contradicts another agent's analysis (MUST acknowledge)
+- `notable` — significant finding that may affect others (SHOULD consider)
+
+**Helper script:** `scripts/findings-helper.sh`
+- `write <file> <severity> <agent> <category> <summary> [file_refs...]`
+- `read <file> [--severity blocking|notable|all]`
+
+**Timeline in synthesis:** The synthesis agent reads the findings timeline for convergence tracking and contradiction detection.
+
+**Command:** `/interflux:fetch-findings <output_dir> [--severity ...]` — inspect shared findings.
 
 ## MCP Servers
 
@@ -192,6 +212,7 @@ See `docs/spec/README.md` for the full document index and reading order.
 | `/interflux:flux-drive` | Multi-agent document/code review |
 | `/interflux:flux-research` | Multi-agent research with source attribution |
 | `/interflux:flux-gen` | Generate project-specific review agents from detected domains |
+| `/interflux:fetch-findings` | Inspect shared findings from parallel reviews |
 
 ## Testing
 
