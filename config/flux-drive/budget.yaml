@@ -30,3 +30,9 @@ min_agents: 2
 
 # Budget enforcement
 enforcement: soft          # soft = warn + offer override | hard = block
+
+# Safety-critical agents — never dropped by budget cuts or AgentDropout (T8.1 mitigation)
+# These agents always run regardless of budget constraints or redundancy signals
+exempt_agents:
+  - fd-safety
+  - fd-correctness

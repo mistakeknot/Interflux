@@ -9,3 +9,6 @@ __pycache__/
 .clavain/verdicts/
 .clavain/quality-gates/
 .clavain/reviews/
+
+# Flux-drive review outputs (may contain security findings — T4.1)
+docs/research/flux-drive/

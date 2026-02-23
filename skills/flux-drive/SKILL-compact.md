@@ -145,6 +145,8 @@ for agent in stage_2_agents_sorted_by_score:
 
 **Stage interaction:** If Stage 1 alone exceeds budget, all Stage 1 agents still launch (stage boundaries override budget). Stage 2 agents are deferred by default when budget is tight. The expansion decision (Step 2.2b) will still offer the user the option to override.
 
+**Exempt agents:** `exempt_agents` in budget.yaml (fd-safety, fd-correctness) are never deferred by budget cuts or future AgentDropout. They always run regardless of budget constraints.
+
 **No-data graceful degradation:** If interstat DB doesn't exist or returns no data, use defaults for ALL agents. Log: "Using default cost estimates (no interstat data)." Do NOT skip budget enforcement — defaults provide reasonable bounds.
 
 ### Step 1.3: User Confirmation
