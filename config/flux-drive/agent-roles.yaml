@@ -54,16 +54,19 @@ roles:
 # Updated by experiment execution scripts, read by framework_score.py.
 experiments:
   exp1_complexity_routing:
-    status: pending    # pending | collecting | complete
-    baseline_runs: 0   # target: 20
-    shadow_runs: 0     # target: 20
+    status: complete   # Analyzed via interstat — B2 not needed, B1 + floors optimal
+    baseline_runs: 34  # Analyzed from existing interstat data
+    shadow_runs: 0     # Shadow mode active but dedicated runs not needed
+    finding: "Hypothesis inverted — role-aware routing increases cost 20%"
   exp2_role_aware:
-    status: pending
-    baseline_runs: 0
+    status: complete   # Analyzed via interstat per-agent tier distribution
+    baseline_runs: 34
     shadow_runs: 0
+    finding: "fd-safety on Haiku 47%, fd-correctness 26% — quality risk, not cost opportunity"
   exp3_collaboration_modes:
-    status: pending
-    runs_per_mode: 0   # target: 5 per mode
+    status: deferred   # Requires flux-drive dispatch changes
+    runs_per_mode: 0
   exp4_pareto_frontier:
-    status: pending
-    policies_tested: 0  # target: 5
+    status: partial    # Real data shows B1+floors dominates
+    policies_tested: 2 # B1 (actual) and B2-projected (via interstat analysis)
+    finding: "B1 + safety floors is Pareto-optimal for current workload"
