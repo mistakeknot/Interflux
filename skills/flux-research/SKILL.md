@@ -239,7 +239,7 @@ Launch the **intersynth research synthesis agent** (foreground, not background â
 Task(intersynth:synthesize-research):
   prompt: |
     OUTPUT_DIR={OUTPUT_DIR}
-    VERDICT_LIB={CLAUDE_PLUGIN_ROOT}/../../hub/clavain/hooks/lib-verdict.sh
+    VERDICT_LIB={CLAUDE_PLUGIN_ROOT}/../../os/clavain/hooks/lib-verdict.sh
     RESEARCH_QUESTION={RESEARCH_QUESTION}
     QUERY_TYPE={type}
     ESTIMATED_DEPTH={estimated_depth}

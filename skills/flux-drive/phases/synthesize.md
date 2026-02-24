@@ -35,7 +35,7 @@ Launch the **intersynth synthesis agent** (foreground, not background — you ne
 Task(intersynth:synthesize-review):
   prompt: |
     OUTPUT_DIR={OUTPUT_DIR}
-    VERDICT_LIB={CLAUDE_PLUGIN_ROOT}/../../hub/clavain/hooks/lib-verdict.sh
+    VERDICT_LIB={CLAUDE_PLUGIN_ROOT}/../../os/clavain/hooks/lib-verdict.sh
     MODE=flux-drive
     CONTEXT="Reviewing {INPUT_TYPE}: {INPUT_STEM} ({N} agents, {early_stop_note})"
     FINDINGS_TIMELINE={OUTPUT_DIR}/peer-findings.jsonl
