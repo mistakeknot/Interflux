@@ -83,7 +83,7 @@ This is the correct implementation. Naive grep-based parsing would fail on these
 
 ### S1 (MEDIUM): Unquoted heredoc expands shell variables into overlay file body
 
-**File:** `/root/projects/Interverse/hub/clavain/hooks/lib-interspect.sh` lines 1521-1529
+**File:** `os/clavain/hooks/lib-interspect.sh` lines 1521-1529
 
 ```bash
 cat > "$tmpfile" <<OVERLAY
@@ -117,7 +117,7 @@ Note that `$created_by` and `$evidence_ids` should also be sanitized through `_i
 
 ### S2 (MEDIUM): Injection filter returns [REDACTED] and allows write to proceed with neutered content
 
-**File:** `/root/projects/Interverse/hub/clavain/hooks/lib-interspect.sh` lines 1216-1226
+**File:** `os/clavain/hooks/lib-interspect.sh` lines 1216-1226
 
 ```bash
 if [[ "$lower" == *"<system>"* ]] || ... ; then
@@ -187,7 +187,7 @@ body=$(_interspect_sanitize "$body" 2000) || {
 
 ### S4 (LOW): `word_count` is shell-interpolated into awk program string without integer validation
 
-**File:** `/root/projects/Interverse/hub/clavain/hooks/lib-interspect.sh` lines 1377-1381
+**File:** `os/clavain/hooks/lib-interspect.sh` lines 1377-1381
 
 ```bash
 word_count=$(printf '%s' "$content" | wc -w | tr -d ' ')

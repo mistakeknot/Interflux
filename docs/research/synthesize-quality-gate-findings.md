@@ -83,7 +83,7 @@ fd-correctness provides the concrete interleaving: second concurrent disabler's 
 
 ### 1. Unquoted heredoc shell expansion — command substitution risk [S1/Q1/A4]
 
-**File:** `hub/clavain/hooks/lib-interspect.sh` ~line 1521
+**File:** `os/clavain/hooks/lib-interspect.sh` ~line 1521
 **Convergence:** 3/4 agents
 
 The heredoc delimiter `OVERLAY` is unquoted (`<<OVERLAY` not `<<'OVERLAY'`), so bash performs variable expansion, arithmetic expansion, and command substitution on every line before writing. The specific risk vector: `$evidence_ids` is validated via `jq -e 'type == "array"'` but not sanitized through `_interspect_sanitize`. A JSON array value of `[1, $(malicious)]` survives the `jq type` check and is shell-executed when written into the file.
@@ -103,7 +103,7 @@ printf '%s\n' "$content" >> "$tmpfile"
 
 ### 2. Injection filter stores [REDACTED] without rejection [S2]
 
-**File:** `hub/clavain/hooks/lib-interspect.sh` lines 1219-1226
+**File:** `os/clavain/hooks/lib-interspect.sh` lines 1219-1226
 **Convergence:** 1/4 agents
 
 `_interspect_sanitize` returns the string `[REDACTED]` with exit code 0 when it matches an injection pattern. The empty-content guard downstream (`if [[ -z "$content" ]]`) does not trigger. The overlay is committed to git with `[REDACTED]` as its body and injected into agent prompts. The user approved the pre-sanitized draft at proposal time (shown in `interspect-propose.md` step 4) — not `[REDACTED]`. This creates a gap between what the user approved and what is stored.
@@ -127,7 +127,7 @@ content=$(_interspect_sanitize "$content" 2000) || {
 
 ### 3. Tmpfile rollback incomplete — orphaned temp file + possible dirty git index [C-01]
 
-**File:** `hub/clavain/hooks/lib-interspect.sh` lines 1520-1540
+**File:** `os/clavain/hooks/lib-interspect.sh` lines 1520-1540
 **Convergence:** 2/4 agents
 
 Two rollback failure modes:
@@ -149,7 +149,7 @@ fi
 
 ### 4. `set -e` inside locked function — canary failure masquerades as write failure [C-02]
 
-**File:** `hub/clavain/hooks/lib-interspect.sh` lines 1485-1603
+**File:** `os/clavain/hooks/lib-interspect.sh` lines 1485-1603
 **Convergence:** 2/4 agents
 
 The locked function sets `set -e`. The `if ! sqlite3 ... INSERT INTO canary` correctly prevents `set -e` from triggering on the INSERT. However, the `sqlite3 UPDATE modifications SET status = 'applied-unmonitored'` inside the `then` branch is unprotected. If the UPDATE fails (e.g., DB locked by a concurrent reader), `set -e` fires and the function exits non-zero. The caller reports "ERROR: Could not write overlay" even though the overlay was successfully committed to git.
@@ -193,7 +193,7 @@ Fix: Change step 2.1d to instruct the agent to call `_interspect_overlay_is_acti
 
 ### 6. Awk injection via unquoted `word_count` interpolation [Q2/S4]
 
-**File:** `hub/clavain/hooks/lib-interspect.sh` ~line 1380
+**File:** `os/clavain/hooks/lib-interspect.sh` ~line 1380
 **Convergence:** 2/4 agents
 
 ```bash
@@ -216,7 +216,7 @@ awk -v wc="$word_count" 'BEGIN { printf "%d", wc * 1.3 }'
 
 ### 7. `_interspect_flock_git` API contract undocumented for function-as-command pattern [A1]
 
-**File:** `hub/clavain/hooks/lib-interspect.sh` lines 1534-1537 and 1141-1158
+**File:** `os/clavain/hooks/lib-interspect.sh` lines 1534-1537 and 1141-1158
 **Convergence:** 1/4 agents
 
 `_interspect_flock_git` is documented as executing a git command ("Usage: `_interspect_flock_git git add <file>`"). The new code passes a shell function name as the first argument:
@@ -236,7 +236,7 @@ Fix: Update the function's comment block to document that it accepts any command
 
 ### 8. TOCTOU in `_interspect_disable_overlay` can re-enable a just-disabled overlay [C-03/A5]
 
-**File:** `hub/clavain/hooks/lib-interspect.sh` lines 1634-1637
+**File:** `os/clavain/hooks/lib-interspect.sh` lines 1634-1637
 **Convergence:** 2/4 agents
 
 Pre-flock active check reads `active: true` for both concurrent callers. Both enter the lock. The second caller's `git commit` fails ("nothing to commit") → rollback runs `git restore` → file restored to `active: true`. Overlay is re-enabled silently with no error visible to the first disabler.
@@ -263,7 +263,7 @@ Fix: Remove `local` from this pseudocode block, or annotate that the snippet req
 
 ### 10. Test suite `set -euo pipefail` exits on first failure, defeating FAIL accumulator [Q7]
 
-**File:** `hub/clavain/test-interspect-overlay.sh` line 8, lines 320-331
+**File:** `os/clavain/test-interspect-overlay.sh` line 8, lines 320-331
 **Convergence:** 1/4 agents
 
 The `fail()` function increments `FAIL` and records the test name, intending to accumulate failures and print a summary. But `set -e` at the top level aborts the script on any unchecked non-zero exit before `fail()` is called. Test 12 calls `_interspect_overlay_body` inside an `if` block — if that function fails under `set -e`, the script exits before recording the failure.
@@ -274,7 +274,7 @@ Fix: Remove `set -e` from the top-level (keep `set -uo pipefail`), or use per-te
 
 ### 11. `echo "$evidence_ids"` for jq validation — leading-hyphen flag risk [Q8]
 
-**File:** `hub/clavain/hooks/lib-interspect.sh` ~line 1258
+**File:** `os/clavain/hooks/lib-interspect.sh` ~line 1258
 **Convergence:** 1/4 agents
 
 `echo` with values beginning with `-` may be interpreted as flags on some shells. The existing library uses `printf '%s'` consistently for this purpose.
@@ -285,7 +285,7 @@ Fix: `printf '%s\n' "$evidence_ids" | jq -e 'type == "array'`
 
 ### 12. Multi-line content in $6 — trailing newline stripping on subshell output [C-04]
 
-**File:** `hub/clavain/hooks/lib-interspect.sh` lines 1487-1489
+**File:** `os/clavain/hooks/lib-interspect.sh` lines 1487-1489
 **Convergence:** 1/4 agents
 
 `flock_output=$( ... )` strips trailing newlines from the subshell's stdout. If anything in the locked function's output path writes trailing newlines before the commit SHA, `tail -1` may not correctly recover the SHA. Low-probability in practice (commit SHA has no trailing newline from `git commit --format=%H`), but worth documenting.

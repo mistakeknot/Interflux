@@ -3,11 +3,11 @@
 **Reviewer:** fd-quality (flux-drive)
 **Date:** 2026-02-18
 **Files reviewed:**
-- `hub/clavain/hooks/lib-interspect.sh` — overlay section added (~406 lines of new Shell)
-- `hub/clavain/test-interspect-overlay.sh` — integration test suite (42 tests)
-- `hub/clavain/commands/interspect-propose.md` — overlay proposal section
-- `hub/clavain/commands/interspect-revert.md` — overlay revert section
-- `hub/clavain/commands/interspect-status.md` — overlay status section
+- `os/clavain/hooks/lib-interspect.sh` — overlay section added (~406 lines of new Shell)
+- `os/clavain/test-interspect-overlay.sh` — integration test suite (42 tests)
+- `os/clavain/commands/interspect-propose.md` — overlay proposal section
+- `os/clavain/commands/interspect-revert.md` — overlay revert section
+- `os/clavain/commands/interspect-status.md` — overlay status section
 - `plugins/interflux/skills/flux-drive/phases/launch.md` — overlay injection step
 
 **Findings written to:** `/root/projects/Interverse/.clavain/quality-gates/fd-quality.md`
@@ -44,7 +44,7 @@ The heredoc in `_interspect_write_overlay_locked` (Q1) is a style concern: if `$
 
 ### Q1. MEDIUM — Heredoc in `_interspect_write_overlay_locked` risks premature termination
 
-**File:** `hub/clavain/hooks/lib-interspect.sh`
+**File:** `os/clavain/hooks/lib-interspect.sh`
 **Location:** `_interspect_write_overlay_locked`, around the `cat > "$tmpfile" <<OVERLAY` block
 
 The overlay file body is written using an unquoted heredoc:
@@ -72,7 +72,7 @@ The variables `${content}`, `${created_by}`, and `${evidence_ids}` are expanded 
 
 ### Q2. MEDIUM — Awk injection via `word_count` interpolation in `_interspect_count_overlay_tokens`
 
-**File:** `hub/clavain/hooks/lib-interspect.sh`
+**File:** `os/clavain/hooks/lib-interspect.sh`
 **Location:** `_interspect_count_overlay_tokens`
 
 ```bash
@@ -94,7 +94,7 @@ This is safe regardless of `word_count` content and consistent with awk usage th
 
 ### Q3. LOW — Test suite `set -euo pipefail` defeats the `FAIL` accumulator
 
-**File:** `hub/clavain/test-interspect-overlay.sh`
+**File:** `os/clavain/test-interspect-overlay.sh`
 **Location:** Line 8, and throughout
 
 The test file opens with `set -euo pipefail`. The framework defines a `fail()` function that increments a counter and continues, intending to run all 42 tests and report aggregate results. However, `set -e` means any unchecked non-zero exit aborts the script — including function calls inside test blocks that aren't explicitly captured with `&& status=0 || status=$?`.
@@ -111,7 +111,7 @@ If `_interspect_overlay_body` returns non-zero for any reason, `set -e` aborts t
 
 ### Q4. LOW — `echo "$evidence_ids"` for jq validation uses `echo` instead of `printf '%s'`
 
-**File:** `hub/clavain/hooks/lib-interspect.sh`
+**File:** `os/clavain/hooks/lib-interspect.sh`
 **Location:** `_interspect_write_overlay`, jq validation block
 
 ```bash
@@ -127,7 +127,7 @@ if ! printf '%s\n' "$evidence_ids" | jq -e 'type == "array"' >/dev/null 2>&1; th
 
 ### Q5. LOW — `local` keyword in interspect-status.md pseudocode used outside a function context
 
-**File:** `hub/clavain/commands/interspect-status.md`
+**File:** `os/clavain/commands/interspect-status.md`
 **Location:** `Active Overlays` bash snippet
 
 ```bash
@@ -162,7 +162,7 @@ The existing `confidence.json` schema already carries configurable thresholds fo
 
 ### Q8. INFO — Test 19 agent name negative coverage is shallow
 
-**File:** `hub/clavain/test-interspect-overlay.sh`
+**File:** `os/clavain/test-interspect-overlay.sh`
 **Location:** Test 19
 
 Only one invalid agent name is tested ("INVALID"). The overlay ID validator (Test 8) covers 5 distinct negative cases: path traversal, uppercase, leading hyphen, empty. The agent name validator is equally important as a path component — adding cases for empty string `""`, path traversal `"../fd-escape"`, and shell metacharacter `"fd-test;rm -rf"` would bring parity.

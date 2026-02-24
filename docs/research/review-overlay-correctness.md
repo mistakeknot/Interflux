@@ -3,8 +3,8 @@
 Reviewer: fd-correctness (Julik, Flux-drive Correctness Reviewer)
 Date: 2026-02-18
 Diff reviewed: `/tmp/qg-diff-1771469414.txt`
-Primary source: `hub/clavain/hooks/lib-interspect.sh` (+406 lines)
-Supporting files: `commands/interspect-propose.md`, `commands/interspect-revert.md`, `commands/interspect-status.md`, `skills/flux-drive/phases/launch.md`, `hub/clavain/test-interspect-overlay.sh`
+Primary source: `os/clavain/hooks/lib-interspect.sh` (+406 lines)
+Supporting files: `commands/interspect-propose.md`, `commands/interspect-revert.md`, `commands/interspect-status.md`, `skills/flux-drive/phases/launch.md`, `os/clavain/test-interspect-overlay.sh`
 
 ---
 
@@ -63,7 +63,7 @@ The following invariants must remain true across all execution paths, including 
 
 ### C-01. MEDIUM: `set -e` in locked function silently converts canary failure into spurious total-failure exit
 
-**File:** `/root/projects/Interverse/hub/clavain/hooks/lib-interspect.sh`, lines 1485–1603
+**File:** `os/clavain/hooks/lib-interspect.sh`, lines 1485–1603
 
 `_interspect_write_overlay_locked` opens with `set -e`. The canary INSERT is guarded by `if ! sqlite3 ...` which correctly suspends `set -e` for that specific command. However, the `UPDATE modifications SET status = 'applied-unmonitored'` inside the failure branch is not guarded:
 
@@ -93,7 +93,7 @@ The `2>/dev/null || true` on the UPDATE suppresses both stderr and the error exi
 
 ### C-02. MEDIUM: Pre-flock active-state check in disable path is a TOCTOU — concurrent disablers can re-enable an overlay
 
-**File:** `/root/projects/Interverse/hub/clavain/hooks/lib-interspect.sh`, lines 1629–1637
+**File:** `os/clavain/hooks/lib-interspect.sh`, lines 1629–1637
 
 ```bash
 if [[ ! -f "$fullpath" ]]; then
@@ -127,7 +127,7 @@ However: if A's git commit is still in-flight (A holds the flock, has not yet re
 
 ### C-03. LOW: Commit SHA extraction via `tail -1` is fragile against future stdout pollution
 
-**File:** `/root/projects/Interverse/hub/clavain/hooks/lib-interspect.sh`, lines 1476–1477
+**File:** `os/clavain/hooks/lib-interspect.sh`, lines 1476–1477
 
 ```bash
 local commit_sha
@@ -149,7 +149,7 @@ Or write the SHA to a known temp file path.
 
 ### C-04. LOW: `local escaped_agent` in command spec is outside a function — not portable
 
-**File:** `hub/clavain/commands/interspect-status.md`, diff lines added ~279–280
+**File:** `os/clavain/commands/interspect-status.md`, diff lines added ~279–280
 
 ```bash
 local escaped_agent
@@ -165,7 +165,7 @@ Secondary: `_interspect_sql_escape` does not escape LIKE metacharacters (`%`, `_
 
 ### C-05. INFO: awk parser misclassifies file with exactly one `---` delimiter
 
-**File:** `/root/projects/Interverse/hub/clavain/hooks/lib-interspect.sh`, line 1323
+**File:** `os/clavain/hooks/lib-interspect.sh`, line 1323
 
 ```bash
 awk '/^---$/ { if (++delim == 2) exit } delim == 1 && /^active: true$/ { found=1 } END { exit !found }' "$filepath"
@@ -179,7 +179,7 @@ Files written by `_interspect_write_overlay_locked` always have exactly two `---
 
 ### C-06. INFO: No SQLite transaction around modifications + canary INSERTs — process kill leaves inconsistent state
 
-**File:** `/root/projects/Interverse/hub/clavain/hooks/lib-interspect.sh`, lines 1558–1601
+**File:** `os/clavain/hooks/lib-interspect.sh`, lines 1558–1601
 
 The `modifications` INSERT and `canary` INSERT are two separate `sqlite3` invocations:
 

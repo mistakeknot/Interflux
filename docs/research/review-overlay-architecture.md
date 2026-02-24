@@ -12,10 +12,10 @@
 Operating in codebase-aware mode. Documentation read:
 
 - `/root/projects/Interverse/plugins/interflux/CLAUDE.md` — interflux plugin conventions
-- `/root/projects/Interverse/hub/clavain/CLAUDE.md` — Clavain conventions
+- `os/clavain/CLAUDE.md` — Clavain conventions
 - `/root/projects/Interverse/CLAUDE.md` — monorepo structure
-- `hub/clavain/hooks/lib-interspect.sh` — full existing file (1700 lines after patch)
-- `hub/clavain/test-interspect-overlay.sh` — 42-test integration suite
+- `os/clavain/hooks/lib-interspect.sh` — full existing file (1700 lines after patch)
+- `os/clavain/test-interspect-overlay.sh` — 42-test integration suite
 - `plugins/interflux/skills/flux-drive/phases/launch.md` — launch phase spec
 
 ---
