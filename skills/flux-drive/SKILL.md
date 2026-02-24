@@ -270,10 +270,19 @@ Before pre-filtering by content, check for project-level routing overrides:
    a. Parse JSON. If malformed, log `"WARNING: routing-overrides.json malformed, ignoring overrides"` in triage output, move file to `.claude/routing-overrides.json.corrupted`, and continue with no exclusions.
    b. Check `version` field. If `version > 1`, log `"WARNING: Routing overrides version N not supported (max 1). Ignoring file."` and continue with no exclusions.
    c. Read `.overrides[]` array. For each entry with `"action": "exclude"`:
-      - Remove the agent from the candidate pool (they will not appear in pre-filter or scoring)
+      - **Scope check:** If the entry has a `scope` field:
+        - If `scope.domains` is set, check if the current document's detected domain (from Step 1.1) matches any domain in the list. If no match, skip this override (agent stays in pool).
+        - If `scope.file_patterns` is set, check if any input file path matches any glob pattern. If no match, skip this override. Reject patterns containing `..` or starting with `/` as invalid.
+        - If both are set, BOTH must match (AND logic).
+        - If `scope.file_patterns` contains only `**` (match-all), treat the override as global and apply the cross-cutting agent warning below.
+      - If no `scope` field, the override applies globally (all domains, all files).
+      - Remove the agent from the candidate pool (they will not appear in pre-filter or scoring).
       - If the agent is not in the roster (unknown name), log: `"WARNING: Routing override for unknown agent {name} — check spelling or remove entry."`
       - If the excluded agent is cross-cutting (fd-architecture, fd-quality, fd-safety, fd-correctness), add a **prominent warning** to triage output: `"Warning: Routing override excludes cross-cutting agent {name}. This removes structural/security coverage."`
+   d. Entries with `"action": "propose"` are informational only — do NOT exclude the agent. Log: `"INFO: Proposed exclusion for {name} (not yet active). Run /interspect:propose to review."`
 4. **Triage table note:** After the scoring table, add: `"N agents excluded by routing overrides: [agent1, agent2, ...]"`
+   - For each excluded agent with a `canary` field, append: `"agent1 [canary: created active, expires 2026-03-09]"` — note this is a creation-time snapshot. Run `/interspect:status` for live canary state.
+   - For each excluded agent with a `confidence` field, append: `"(confidence: 0.85)"`
 5. **Discovery nudge:** If the same agent has been overridden 3+ times in the current session (via user declining findings or explicitly overriding), add a note after the triage table: `"Tip: Agent {name} was overridden {N} times this session. Run /interspect:correction to record this pattern. After enough evidence, /interspect can propose permanent exclusions."`
 6. **Continue to Step 1.2a** with the reduced candidate pool.
 

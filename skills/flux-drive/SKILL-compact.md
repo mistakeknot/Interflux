@@ -60,7 +60,7 @@ For diffs: also extract file count, stats (+/-), slicing eligible (>=1000 lines)
 
 ### Step 1.2: Select Agents
 
-**Step 1.2a.0: Routing Overrides** — Read `.claude/routing-overrides.json` if exists. Exclude any agent with `"action":"exclude"`. Warn if excluded agent covers a cross-cutting domain (architecture, quality).
+**Step 1.2a.0: Routing Overrides** — Read `.claude/routing-overrides.json` if exists. Exclude any agent with `"action":"exclude"`. If override has `scope` (domains/file_patterns), only exclude when scope matches current input (AND logic; reject `..` or `/`-prefixed patterns). Entries with `"action":"propose"` are informational only (not excluded). Warn if excluded agent covers a cross-cutting domain (architecture, quality, safety, correctness) — also warn if scope contains only `**`. Show canary snapshot `[canary: created <status>, expires <date>]` and confidence `(<value>)` in triage notes when present. Canary is a creation-time snapshot; run `/interspect:status` for live state.
 
 **Step 1.2a: Pre-filter** — Eliminate agents that cannot score >=1:
 - fd-correctness: skip unless DB/migrations/concurrency/async
