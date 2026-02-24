@@ -10,6 +10,31 @@ source "$HOOK_DIR/interbase-stub.sh"
 # Emit ecosystem status (no-op in stub mode)
 ib_session_status
 
+# --- First-run diagnostic (runs once after install) ---
+_if_init_dir="${HOME}/.config/interflux"
+_if_init_flag="${_if_init_dir}/.initialized"
+if [[ ! -f "$_if_init_flag" ]]; then
+  mkdir -p "$_if_init_dir"
+  _if_missing=()
+  command -v jq &>/dev/null || _if_missing+=("jq: required by interflux hooks (install via your package manager)")
+  command -v qmd &>/dev/null || _if_missing+=("qmd: enables semantic doc search (install with: bun install -g qmd)")
+  [[ -n "${EXA_API_KEY:-}" ]] || _if_missing+=("EXA_API_KEY: enables web search in research agents (set in your shell profile)")
+  if [[ ${#_if_missing[@]} -gt 0 ]]; then
+    echo "[interflux] First-run setup check — optional dependencies:" >&2
+    for _if_item in "${_if_missing[@]}"; do
+      echo "  - $_if_item" >&2
+    done
+    echo "[interflux] interflux works without these, but some features will be degraded." >&2
+  fi
+  touch "$_if_init_flag"
+fi
+
+# --- Budget signal reading (requires jq) ---
+if ! command -v jq &>/dev/null; then
+  # Cannot parse session input or budget files without jq — skip gracefully
+  exit 0
+fi
+
 # Read interstat budget signal if available (always-on, not sprint-only)
 _if_session_id=$(printf '%s' "$HOOK_INPUT" | jq -r '.session_id // empty' 2>/dev/null)
 

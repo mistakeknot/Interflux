@@ -4,6 +4,11 @@
 # and writes to ~/.config/clavain/capabilities-<agent-name>.json
 set -euo pipefail
 
+if ! command -v jq &>/dev/null; then
+    echo "[interflux] jq not found — skipping capability registration" >&2
+    exit 0
+fi
+
 PLUGIN_JSON="${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json"
 [[ -f "$PLUGIN_JSON" ]] || exit 0
 
