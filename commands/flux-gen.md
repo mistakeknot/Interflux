@@ -1,14 +1,31 @@
 ---
 name: flux-gen
-description: Generate project-specific review agents from detected domain profiles
-argument-hint: "[optional: domain name to generate for, or 'all' for all detected domains]"
+description: Generate review agents from domain profiles or task prompts
+argument-hint: "[domain name | task prompt text | 'all']"
 ---
 
-# Flux-Gen — Domain-Specific Agent Generator
+# Flux-Gen — Review Agent Generator
 
-Generate project-specific `fd-*` review agents in `.claude/agents/` based on the project's detected domain profiles. These agents complement the core flux-drive plugin agents with deeper, domain-specific review expertise.
+Generate `fd-*` review agents in `.claude/agents/`. Two modes:
 
-## Step 1: Detect Project Domains
+1. **Domain mode** (default): Generate from predefined domain profiles (e.g., `game-simulation`, `web-api`)
+2. **Prompt mode**: Generate task-specific agents from a free-form research question or task description
+
+## Step 0: Detect Mode
+
+Parse `$ARGUMENTS` to determine which mode:
+
+**Known domain names:** `game-simulation`, `web-api`, `ml-pipeline`, `cli-tool`, `mobile-app`, `embedded-systems`, `data-pipeline`, `library-sdk`, `tui-app`, `desktop-tauri`, `claude-code-plugin`
+
+- If `$ARGUMENTS` is empty or `all` → **Domain mode** (Step 1)
+- If `$ARGUMENTS` matches a known domain name → **Domain mode** with that domain (Step 1)
+- If `$ARGUMENTS` is free-form text that does NOT match a known domain → **Prompt mode** (Step P1)
+
+---
+
+## Domain Mode
+
+### Step 1: Detect Project Domains
 
 If `$ARGUMENTS` specifies a domain name (e.g., `game-simulation`), skip detection and use that domain directly. If `$ARGUMENTS` is `all` or empty, detect domains.
 
@@ -26,9 +43,10 @@ If no domains detected and no argument provided, tell the user:
 > **Available domains:** game-simulation, web-api, ml-pipeline, cli-tool, mobile-app, embedded-systems, data-pipeline, library-sdk, tui-app, desktop-tauri, claude-code-plugin
 >
 > **To specify manually:** `/flux-gen game-simulation` (or any domain above)
+> **To generate task-specific agents:** `/flux-gen analyze mcp_agent_mail coordination protocol for Demarch adoption`
 > **To skip domain agents:** Run `/flux-drive` directly — core agents work without domain specialization
 
-## Step 2: Preview Generation
+### Step 2: Preview Generation
 
 Run the shared generation script in dry-run mode to show what would be generated:
 
@@ -38,14 +56,14 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --mode=s
 
 Parse the JSON report to count new agents vs existing agents. Present to the user.
 
-## Step 3: Confirm
+### Step 3: Confirm
 
 Use **AskUserQuestion** to confirm:
 - Option 1: "Generate N new agents (skip M existing)" (Recommended) → `--mode=skip-existing`
 - Option 2: "Regenerate all (overwrite existing)" → `--mode=force`
 - Option 3: "Cancel"
 
-## Step 4: Generate
+### Step 4: Generate
 
 Run the generation script with the selected mode:
 
@@ -55,7 +73,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --mode=<
 
 Parse the JSON report and display per-agent results.
 
-## Step 5: Report
+### Step 5: Report
 
 After generation, present a summary:
 
@@ -73,6 +91,93 @@ To use them in a review: /flux-drive <target>
 To regenerate: /flux-gen (existing agents are preserved unless you choose overwrite)
 ```
 
+---
+
+## Prompt Mode
+
+### Step P1: Design Agent Specs
+
+Launch a **Sonnet** subagent (Task tool, `model: sonnet`) with this prompt:
+
+```
+You are an expert at designing specialized code review agents. Given a task
+description, design 3-5 focused review agents that would provide the most
+valuable analysis for this task.
+
+Task: {$ARGUMENTS}
+
+For each agent, output a JSON object with these fields:
+- name: string starting with "fd-" (e.g., "fd-coordination-protocol")
+- focus: one-line description of what this agent reviews
+- persona: 1-2 sentences describing the agent's expertise and approach
+- decision_lens: 1-2 sentences on how this agent prioritizes findings
+- review_areas: array of 4-6 bullet strings, each a specific thing to check
+- success_hints: array of 1-3 bullet strings, domain-specific success criteria
+- task_context: 1-2 sentences of context about the task (shared across agents)
+- anti_overlap: array of 1-3 strings describing what OTHER agents in this batch cover (so this agent avoids duplicating)
+
+Design rules:
+- Each agent should have a DISTINCT, non-overlapping focus area
+- Agent names should be descriptive: fd-<domain>-<concern> (e.g., fd-message-semantics, fd-agent-identity)
+- Review areas should be specific and actionable, not vague
+- Anti-overlap entries should reference the other agents by name
+- Focus on what would be most valuable for the stated task, not generic code quality
+
+Return ONLY a valid JSON array of objects. No markdown, no explanation.
+```
+
+Parse the JSON response. If parsing fails, tell the user and offer to retry.
+
+### Step P2: Preview Specs
+
+Display the designed agents to the user:
+
+```
+Prompt mode: Designed {N} task-specific agents:
+
+  1. fd-{name1}: {focus}
+  2. fd-{name2}: {focus}
+  3. fd-{name3}: {focus}
+  ...
+```
+
+### Step P3: Confirm
+
+Use **AskUserQuestion** to confirm:
+- Option 1: "Generate {N} agents (Recommended)" → proceed
+- Option 2: "Regenerate specs (different agents)" → go back to Step P1
+- Option 3: "Cancel"
+
+### Step P4: Generate
+
+Write the specs JSON to a temp file and run the generation script:
+
+```bash
+# Write specs to temp file (use Write tool, NOT heredoc)
+# Then:
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --from-specs /tmp/flux-gen-specs.json --mode=skip-existing --json
+```
+
+Parse the JSON report and display per-agent results.
+
+### Step P5: Report
+
+```
+Generated {N} task-specific agents in .claude/agents/:
+
+  - fd-{name1}: {focus} [created]
+  - fd-{name2}: {focus} [created]
+  ...
+
+These agents will be included in flux-drive triage as Project Agents
+(+1 category bonus). Customize them by editing the .md files directly.
+
+To use them: /flux-drive <target>
+To regenerate with different focus: /flux-gen <new task prompt>
+```
+
+---
+
 ## Notes
 
 - Generated agents use `subagent_type: general-purpose` in flux-drive (their full content is pasted as the system prompt)
@@ -80,4 +185,6 @@ To regenerate: /flux-gen (existing agents are preserved unless you choose overwr
 - Multiple domains may generate overlapping agents — flux-drive deduplication handles this (prefer Project > Plugin)
 - Users should customize generated agents for their specific project needs
 - `flux_gen_version: 4` agents have persona, decision lens, anti-overlap clauses, and success criteria; older versions are auto-regenerated by `--mode=regenerate-stale`
-- Generation is deterministic — same domain profile always produces the same agent file (no LLM involvement in template expansion)
+- Domain mode generation is deterministic — same domain profile always produces the same agent file
+- Prompt mode uses an LLM to design specs, then the same deterministic rendering pipeline
+- Prompt-mode agents are tagged `generated_by: flux-gen-prompt` in frontmatter (vs `flux-gen` for domain mode)
