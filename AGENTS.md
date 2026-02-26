@@ -23,96 +23,16 @@ Multi-agent review and research engine for Claude Code. Companion plugin for [Cl
 
 ```
 interflux/
-├── .claude-plugin/
-│   ├── plugin.json                # Plugin manifest (name, version, MCP servers)
-│   └── integration.json           # Ecosystem integration manifest (dual-mode)
-├── agents/
-│   ├── review/                    # 8 review agents (7 technical + 1 cognitive)
-│   │   ├── fd-architecture.md
-│   │   ├── fd-correctness.md
-│   │   ├── fd-game-design.md
-│   │   ├── fd-performance.md
-│   │   ├── fd-quality.md
-│   │   ├── fd-safety.md
-│   │   ├── fd-systems.md           # Cognitive: systems thinking blind spots
-│   │   ├── fd-user-product.md
-│   │   └── references/           # Shared reference material (not agents)
-│   │       └── concurrency-patterns.md
-│   └── research/                  # 5 research agents
-│       ├── best-practices-researcher.md
-│       ├── framework-docs-researcher.md
-│       ├── git-history-analyzer.md
-│       ├── learnings-researcher.md
-│       └── repo-research-analyst.md
-├── commands/                      # 3 slash commands
-│   ├── flux-drive.md              # /interflux:flux-drive — multi-agent review
-│   ├── flux-gen.md                # /interflux:flux-gen — generate project-specific agents
-│   └── flux-research.md           # /interflux:flux-research — multi-agent research
-├── skills/
-│   ├── flux-drive/                # Review orchestration skill
-│   │   ├── SKILL.md               # Entry point — triage, scoring, dispatch
-│   │   ├── phases/                # Phase-specific instructions
-│   │   │   ├── launch.md          # Stage 1/2 dispatch, expansion decision
-│   │   │   ├── launch-codex.md    # Codex delegation variant
-│   │   │   ├── cross-ai.md        # Oracle/Codex cross-AI dispatch
-│   │   │   ├── shared-contracts.md # Completion signal, findings index format
-│   │   │   ├── slicing.md         # Content routing for large inputs
-│   │   │   └── synthesize.md      # Findings aggregation, verdict
-│   │   └── references/
-│   │       ├── agent-roster.md    # Agent metadata and invocation guide
-│   │       └── scoring-examples.md # Worked triage scoring examples
-│   └── flux-research/
-│       └── SKILL.md               # Research orchestration — triage, dispatch, synthesize
-├── config/
-│   └── flux-drive/
-│       ├── domains/               # 11 domain detection profiles
-│       │   ├── index.yaml         # Detection signals and scoring weights
-│       │   ├── web-api.md
-│       │   ├── cli-tool.md
-│       │   ├── tui-app.md
-│       │   ├── game-simulation.md
-│       │   ├── data-pipeline.md
-│       │   ├── claude-code-plugin.md
-│       │   ├── library-sdk.md
-│       │   ├── desktop-tauri.md
-│       │   ├── mobile-app.md
-│       │   ├── embedded-systems.md
-│       │   └── ml-pipeline.md
-│       └── knowledge/            # Legacy — moved to interknow plugin
-├── hooks/
-│   ├── hooks.json                 # Hook declarations (SessionStart)
-│   ├── interbase-stub.sh          # SDK stub — sources live or falls back to no-ops
-│   └── session-start.sh           # Sources interbase, emits ecosystem status
-├── docs/
-│   └── spec/                     # flux-drive protocol specification (v1.0.0)
-│       ├── README.md             # Conformance levels, reading order
-│       ├── core/                 # Required protocol documents
-│       │   ├── protocol.md       # 3-phase lifecycle
-│       │   ├── scoring.md        # Agent selection algorithm
-│       │   ├── staging.md        # Stage expansion logic
-│       │   └── synthesis.md      # Findings aggregation
-│       ├── contracts/            # Required interface contracts
-│       │   ├── findings-index.md # Agent output format
-│       │   └── completion-signal.md # Agent completion protocol
-│       └── extensions/           # Optional enhancements
-│           ├── domain-detection.md # Weighted signal scoring
-│           └── knowledge-lifecycle.md # Review memory with decay (see interknow)
-├── scripts/
-│   ├── content-hash.py            # Deterministic content hash for cache staleness
-│   ├── generate-agents.py         # Deterministic agent file generation from domain profiles
-│   ├── update-domain-profiles.py  # Regenerate domain profiles
-│   └── validate-roster.sh        # Validate agent roster consistency
-└── tests/
-    └── structural/               # 120 pytest tests
-        ├── conftest.py
-        ├── helpers.py
-        ├── test_agents.py
-        ├── test_commands.py
-        ├── test_content_hash.py       # Tests for content hash helper
-        ├── test_generate_agents.py  # 23 tests for agent file generation
-        ├── test_namespace.py      # Guards against stale clavain: refs
-        ├── test_skills.py
-        └── test_slicing.py
+├── agents/review/       # 8 fd-* review agents (7 technical + fd-systems cognitive)
+├── agents/research/     # 5 research agents (best-practices, framework-docs, git-history, learnings, repo-research)
+├── commands/            # 3 commands: flux-drive, flux-gen, flux-research
+├── skills/flux-drive/   # Review orchestration (triage, launch phases, synthesis) + references/
+├── skills/flux-research/# Research orchestration
+├── config/flux-drive/domains/  # 11 domain detection profiles + index.yaml
+├── docs/spec/           # flux-drive protocol spec v1.0.0 (9 documents)
+├── hooks/               # SessionStart (interbase-aware)
+├── scripts/             # content-hash, generate-agents, validate-roster
+└── tests/structural/    # 120 pytest tests
 ```
 
 ## How It Works
