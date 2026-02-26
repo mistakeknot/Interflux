@@ -4,8 +4,9 @@
 Two modes of operation:
 
 1. Domain mode (default): Reads cached domain detection results from
-   .claude/flux-drive.yaml, parses domain profile markdown files from
-   config/flux-drive/domains/{domain}.md, and generates .claude/agents/fd-*.md
+   .claude/intersense.yaml, parses domain profile markdown files from
+   intersense config/domains/{domain}.md (with fallback to local
+   config/flux-drive/domains/{domain}.md), and generates .claude/agents/fd-*.md
    agent files deterministically.
 
 2. Prompt mode (--from-specs): Reads agent specs as JSON from a file (typically
@@ -37,7 +38,9 @@ except ImportError:
     raise SystemExit(2)
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
-DOMAINS_DIR = PLUGIN_ROOT / "config" / "flux-drive" / "domains"
+# Try intersense first (canonical location), fall back to local copy
+_INTERSENSE_DOMAINS = PLUGIN_ROOT.parent / "intersense" / "config" / "domains"
+DOMAINS_DIR = _INTERSENSE_DOMAINS if _INTERSENSE_DOMAINS.exists() else PLUGIN_ROOT / "config" / "flux-drive" / "domains"
 
 # Current generation version — bump when template format changes
 FLUX_GEN_VERSION = 4
@@ -527,7 +530,7 @@ def generate(
             orphaned: list of agent names whose domain is no longer detected
             errors: list of error message strings
     """
-    cache_path = project / ".claude" / "flux-drive.yaml"
+    cache_path = project / ".claude" / "intersense.yaml"
     agents_dir = project / ".claude" / "agents"
 
     report: dict[str, Any] = {

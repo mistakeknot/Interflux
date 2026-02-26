@@ -42,9 +42,9 @@ Clean OUTPUT_DIR of stale `.md` files before starting.
 
 ### Step 1.0.1: Domain Detection
 
-**Cache check:** `{PROJECT_ROOT}/.claude/flux-drive.yaml` — if exists with `domains:` and `content_hash:` matches current files, use cached. If `override: true`, never re-detect.
+**Cache check:** `{PROJECT_ROOT}/.claude/intersense.yaml` — if exists with `domains:` and `content_hash:` matches current files, use cached. If `override: true`, never re-detect.
 
-**Detection:** Run deterministic script: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/detect-domains.py {PROJECT_ROOT} --json`. Scans dirs, files, build deps, source keywords against `config/flux-drive/domains/index.yaml`. Auto-caches with structural hash.
+**Detection:** Run deterministic script: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/detect-domains.py {PROJECT_ROOT} --json`. Scans dirs, files, build deps, source keywords against domain signals (intersense plugin, fallback `config/flux-drive/domains/index.yaml`). Auto-caches to `.claude/intersense.yaml` with structural hash.
 
 **If detection returns no domains or fails:** Proceed with core agents only (no domain-specific agents).
 

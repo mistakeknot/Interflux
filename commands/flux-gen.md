@@ -30,11 +30,11 @@ Parse `$ARGUMENTS` to determine which mode:
 
 If `$ARGUMENTS` specifies a domain name (e.g., `game-simulation`), skip detection and use that domain directly. If `$ARGUMENTS` is `all` or empty, detect domains.
 
-**Cache check:** Read `{PROJECT_ROOT}/.claude/flux-drive.yaml`. If it exists with `domains:` entries and `content_hash:` matches current project files, use cached results. If `override: true`, always use cached.
+**Cache check:** Read `{PROJECT_ROOT}/.claude/intersense.yaml`. If it exists with `domains:` entries and `content_hash:` matches current project files, use cached results. If `override: true`, always use cached.
 
 **Detection** (no cache or stale cache):
 
-Run deterministic detection: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/detect-domains.py {PROJECT_ROOT} --json`. Scans dirs, files, build deps, source keywords against `config/flux-drive/domains/index.yaml`. Auto-caches with structural hash.
+Run deterministic detection: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/detect-domains.py {PROJECT_ROOT} --json`. Scans dirs, files, build deps, source keywords against domain signals (intersense plugin). Auto-caches to `.claude/intersense.yaml` with structural hash.
 
 **If detection returns no domains or fails:** Tell the user domain detection found no matches and offer to specify a domain manually.
 

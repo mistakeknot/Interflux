@@ -137,9 +137,9 @@ Uses a query-type affinity table to select research agents, dispatches in parall
 
 ### Domain Detection
 
-LLM-based classification — a Haiku subagent reads README + build files + key source files and classifies the project into 11 known domains. Cached in `.claude/flux-drive.yaml` with `content_hash` for staleness detection. Staleness computed deterministically by `scripts/content-hash.py`.
+LLM-based classification — a Haiku subagent reads README + build files + key source files and classifies the project into 11 known domains. Cached in `.claude/intersense.yaml` with `content_hash` for staleness detection. Staleness computed deterministically by `scripts/content-hash.py`. Domain detection scripts delegate to the intersense plugin (canonical location).
 
-11 domains defined in `config/flux-drive/domains/`. Each domain profile contains review criteria, agent specs, and Research Directives for external research agents.
+11 domains defined in intersense `config/domains/` (with local fallback at `config/flux-drive/domains/`). Each domain profile contains review criteria, agent specs, and Research Directives for external research agents.
 
 ### Agent Generation
 

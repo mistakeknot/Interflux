@@ -100,7 +100,7 @@ A document-codebase divergence is itself a P0 finding — every agent should be 
 
 Detect the project's domain(s) for agent selection and domain-specific review criteria injection. Results are cached.
 
-**Cache check:** Look for `{PROJECT_ROOT}/.claude/flux-drive.yaml`. If it exists and contains `domains:` with at least one entry, use cached results. If the file also contains `override: true`, never re-detect — the user has manually set their domains.
+**Cache check:** Look for `{PROJECT_ROOT}/.claude/intersense.yaml`. If it exists and contains `domains:` with at least one entry, use cached results. If the file also contains `override: true`, never re-detect — the user has manually set their domains.
 
 **Detection** (when no cache, cache is stale, or `source: heuristic` in cache):
 
@@ -110,9 +110,9 @@ Run the deterministic domain detection script:
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/detect-domains.py {PROJECT_ROOT} --json
 ```
 
-This scans directories, files, build-system dependencies, and source keywords against signals defined in `config/flux-drive/domains/index.yaml`. No LLM call needed.
+This scans directories, files, build-system dependencies, and source keywords against signals defined in domain profiles (shipped with the intersense plugin, with a local fallback at `config/flux-drive/domains/index.yaml`). No LLM call needed.
 
-Parse the JSON output (`{"domains": [...], "source": "deterministic"}`). The script automatically writes the cache to `{PROJECT_ROOT}/.claude/flux-drive.yaml` with structural hash for staleness detection.
+Parse the JSON output (`{"domains": [...], "source": "deterministic"}`). The script automatically writes the cache to `{PROJECT_ROOT}/.claude/intersense.yaml` with structural hash for staleness detection.
 
 **If detection returns no domains** (exit code 1 or empty list): proceed with core agents only (no domain-specific agents). Log: `"Domain detection: no domains matched, proceeding with core agents only."`
 
@@ -126,7 +126,7 @@ Parse the JSON output (`{"domains": [...], "source": "deterministic"}`). The scr
 
 Check if cached domain detection is outdated using the deterministic content hash helper.
 
-1. Read `content_hash` from `{PROJECT_ROOT}/.claude/flux-drive.yaml`
+1. Read `content_hash` from `{PROJECT_ROOT}/.claude/intersense.yaml`
 2. If no `content_hash` field (old cache format): cache is stale, proceed to Step 1.0.3
 3. Run the hash helper to compare:
    ```bash
@@ -381,7 +381,7 @@ Score Components:
 
 **Project bonus** (+0 or +1): Plugin Agents get +1 when the target project has CLAUDE.md/AGENTS.md (they auto-detect and use codebase-aware mode). Project Agents get +1 (project-specific by definition).
 
-**Domain boost** (+0, +1, or +2; applied only when base score ≥ 1): When Step 1.0.1 detected a project domain, check each agent's injection criteria in the corresponding domain profile (`config/flux-drive/domains/*.md`):
+**Domain boost** (+0, +1, or +2; applied only when base score ≥ 1): When Step 1.0.1 detected a project domain, check each agent's injection criteria in the corresponding domain profile (intersense `config/domains/*.md`, with fallback to local `config/flux-drive/domains/*.md`):
 - Agent has injection criteria with ≥3 bullets for this domain → +2
 - Agent has injection criteria (1-2 bullets) for this domain → +1
 - Agent has no injection criteria for this domain → +0
