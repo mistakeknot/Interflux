@@ -95,4 +95,13 @@ Only for strong/moderate matches, read completely and extract problem, solution,
 
 ## Integration
 
-Invoked by `/clavain:write-plan`, `/clavain:lfg`, or manually before feature work. Target: surface relevant learnings in under 30 seconds.
+**Automatically invoked by:**
+- `clavain:writing-plans` skill (Step 0) — surfaces relevant learnings before plan tasks are written
+- `/clavain:work` command (Phase 1b) — safety net when plan lacks a Prior Learnings section
+
+**Also referenced in:**
+- `AGENTS.md` Operational Guides table — general guidance for ad-hoc work outside sprint workflow
+
+**Manual invocation:** Spawn directly before starting work on any feature or fix.
+
+Target: surface relevant learnings in under 30 seconds.
