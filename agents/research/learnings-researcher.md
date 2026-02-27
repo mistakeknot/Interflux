@@ -51,6 +51,10 @@ Use `|` for synonyms, include `title:` field, use `-i=true`. If >25 candidates, 
 
 **Always also read** `docs/solutions/patterns/critical-patterns.md` for must-know patterns.
 
+### Step 3b: Prefer Synthesis Targets
+
+If a candidate doc has `synthesized_into: <path>` in frontmatter, prefer the synthesis target instead. The synthesis doc is more comprehensive and deduplicated.
+
 ### Step 4: Read & Score Candidates
 
 Read frontmatter only (limit:30) for Grep-matched files. Score relevance:
