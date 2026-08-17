@@ -1,0 +1,27 @@
+{
+  "scan_date": "2026-08-17T03:22:35",
+  "watchables": {
+    "skill-compact": {
+      "path": "skills/flux-drive/SKILL-compact.md",
+      "exists": false,
+      "score": 0,
+      "confidence": "Green",
+      "stale": false,
+      "signals": {
+        "commits_since_update": {
+          "count": 0,
+          "weight": 3,
+          "score": 0
+        },
+        "file_created": {
+          "count": 0,
+          "weight": 2,
+          "score": 0
+        }
+      },
+      "recommended_action": "none",
+      "generator": "null",
+      "generator_args": {}
+    }
+  }
+}

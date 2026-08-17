@@ -1,6 +1,6 @@
 watchables:
   - name: skill-compact
-    path: skills/flux-drive/SKILL-compact.md
+    path: skills/flux-engine/SKILL-compact.md
     generator: "null"  # No auto-generator — manual sync required
     generator_args: {}
     staleness_days: 3
