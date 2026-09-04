@@ -1,6 +1,7 @@
 import json
 import subprocess
 import sys
+import pytest
 from pathlib import Path
 
 
@@ -45,9 +46,10 @@ def test_kimi_producer_selects_astra():
 def test_astra_producer_excludes_astra_and_prefers_external_fable():
     candidates = resolve("validation", "codex/gpt-6-astra")["candidates"]
     assert candidates[0]["kind"] == "claude"
-    assert candidates[0]["model"] == "fable"
+    assert candidates[0]["model"] == "claude-fable-5-1"
     assert all(item["model"] != "gpt-6-astra" for item in candidates)
-    assert [item["model"] for item in candidates] == ["fable", "k3", "gpt-5.6-sol"]
+    assert [item["model"] for item in candidates] == ["claude-fable-5-1", "k3", "gpt-5.6-sol"]
+    assert 'NTSMR_KIMI_MODEL="{model}" KIMI_CLI_MODEL="kimi-code/{model}"' in candidates[1]["invoke"]
 
 
 def test_validation_requires_producer_identity():
@@ -59,3 +61,23 @@ def test_validation_requires_producer_identity():
     )
     assert result.returncode == 2
     assert "--producer" in result.stderr
+
+
+@pytest.mark.parametrize("producer", [
+    "anthropic/claude-fable-5-1[1m]", "claude-code/claude-fable-5-1-20260901",
+    "openai/gpt-6-astra-2026-09-01", "codex/gpt-5.6-20260901",
+    "moonshot/kimi-code/k3",
+])
+def test_reviewers_exclude_canonical_producer(producer):
+    payload = resolve("validation", producer)
+    identity = payload["producer_identity"]["model_identity"]
+    assert all(item["model_identity"] != identity for item in payload["candidates"])
+    assert payload["validator_relationship"] == "different-model"
+    if identity == "claude-fable-5-1":
+        assert payload["candidates"][0]["model"] == "gpt-6-astra"
+
+
+def test_unknown_producer_alias_fails_closed():
+    result = subprocess.run([sys.executable, str(SCRIPT), "--purpose", "validation", "--producer", "codex/custom-alias"], cwd=ROOT, capture_output=True, text=True)
+    assert result.returncode == 2
+    assert "identity" in result.stderr

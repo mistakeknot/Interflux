@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -24,6 +25,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def parse_producer(value: str) -> tuple[str, str]:
+    value = value.strip().lower()
     separator = "/" if "/" in value else ":"
     if separator not in value:
         raise ValueError("--producer must be kind/model or kind:model")
@@ -33,9 +35,25 @@ def parse_producer(value: str) -> tuple[str, str]:
     return kind, model
 
 
+def model_identity(model: str, aliases: dict[str, str]) -> str:
+    """Conservative family identity; unknown symbolic aliases are not evidence."""
+    model = re.sub(r"\[(?:1m|200k)\]$", "", model.strip().lower())
+    model = re.sub(r"-(?:\d{4}-\d{2}-\d{2}|\d{8})$", "", model)
+    seen = set()
+    while model in aliases:
+        if model in seen:
+            raise ValueError(f"cyclic model identity alias: {model}")
+        seen.add(model)
+        model = aliases[model]
+    if not model.startswith(("gpt-", "claude-", "kimi-", "kimi/")):
+        raise ValueError(f"unknown model identity: {model}; provide the resolved model ID")
+    return model
+
+
 def resolve(config: dict, purpose: str, producer: str | None) -> dict:
     routing = config["reviewer_routing"]
     profiles = routing["profiles"]
+    aliases = routing.get("model_aliases", {})
 
     if purpose == "bulk":
         references = routing["routes"]["bulk"]
@@ -44,18 +62,26 @@ def resolve(config: dict, purpose: str, producer: str | None) -> dict:
         if not producer:
             raise ValueError("--producer is required for validation routing")
         producer_kind, producer_model = parse_producer(producer)
+        producer_model = model_identity(producer_model, aliases)
+        # Provider aliases must not change the route selected for one model.
+        producer_kind = "codex" if producer_model.startswith("gpt-") else "claude" if producer_model.startswith("claude-") else "kimi"
         validation = routing["routes"]["validation"]
         references = validation.get("producer_model", {}).get(producer_model)
         if references is None:
             references = validation.get("producer_kind", {}).get(
                 producer_kind, validation["default"]
             )
-        producer_identity = {"kind": producer_kind, "model": producer_model}
+        producer_identity = {"kind": producer_kind, "model": producer_model, "model_identity": producer_model, "reported": producer}
 
     candidates = []
+    excluded = []
     for reference in references:
         profile = dict(profiles[reference])
-        if producer_identity and profile["model"] == producer_identity["model"]:
+        identity = model_identity(profile["model"], aliases)
+        if producer_identity:
+            profile["model_identity"] = identity
+        if producer_identity and identity == producer_identity["model_identity"]:
+            excluded.append({"profile": reference, **profile, "reason": "producer_model_conflict"})
             continue
         candidates.append({"profile": reference, **profile})
 
@@ -66,6 +92,8 @@ def resolve(config: dict, purpose: str, producer: str | None) -> dict:
         "purpose": purpose,
         "producer_identity": producer_identity,
         "candidates": candidates,
+        "excluded": excluded,
+        "validator_relationship": "different-model" if producer_identity else None,
     }
 
 

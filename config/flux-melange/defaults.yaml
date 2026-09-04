@@ -157,6 +157,11 @@ peers:
 # scripts/select-review-route.py instead of reconstructing this policy in prose.
 #
 reviewer_routing:
+  model_aliases:
+    fable: claude-fable-5-1
+    gpt-5.6: gpt-5.6-sol
+    k3: kimi-code/k3
+    kimi/k3: kimi-code/k3
   profiles:
     sol-bulk:
       kind: codex
@@ -173,7 +178,7 @@ reviewer_routing:
       invoke: 'codex exec --full-auto --skip-git-repo-check --ephemeral -C "{projectRoot}" -m "{model}" -c service_tier="default" -c model_reasoning_effort="high" -o "{outfile}" - < "{promptfile}"'
     fable-review:
       kind: claude
-      model: fable
+      model: claude-fable-5-1
       reasoning_effort: high
       service_tier: standard
       invoke: 'claude -p --model "{model}" --permission-mode dontAsk --disallowedTools "Write,Edit,MultiEdit,NotebookEdit" < "{promptfile}" > "{outfile}"'
@@ -182,7 +187,7 @@ reviewer_routing:
       model: k3
       reasoning_effort: high
       service_tier: standard
-      invoke: 'cd "{projectRoot}" && {pluginRoot}/scripts/kimi-peer-invoke.sh "{promptfile}" "{outfile}"'
+      invoke: 'cd "{projectRoot}" && env NTSMR_KIMI_MODEL="{model}" KIMI_CLI_MODEL="kimi-code/{model}" {pluginRoot}/scripts/kimi-peer-invoke.sh "{promptfile}" "{outfile}"'
   routes:
     bulk: [sol-bulk]
     validation:
