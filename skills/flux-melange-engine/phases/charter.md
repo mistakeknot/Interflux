@@ -17,6 +17,7 @@ Parse `$ARGUMENTS`:
 | `--fusion=auto\|N\|off` | `auto` | fusions/round (auto = ≤ 2; depth-2 only on `--quality=max`) |
 | `--verify=auto\|off\|all` | `auto` | `auto` = gated on `novelty ≥ 2 OR risk.product ≥ 9` |
 | `--peers=off\|auto\|<rt>[:<model>],...` | `off` | multi-runtime mirrors + Parley (see § Resolve peer runtimes; `references/peer-runtimes.md`) |
+| `--producer=<kind>/<model>` | unset | enable consequential validation routing relative to the producing model; required identity is persisted in the plan and report |
 | `--exchange-rounds=N` | `3` | Parley exchange cap (fixed point usually lands earlier) |
 | `--interactive` | off | restores per-round confirmation + the GOAL-MET soft-stop prompt |
 
@@ -46,9 +47,43 @@ OUTPUT_ROOT   = {PROJECT_ROOT}/docs/research/flux-melange/{SLUG}
 
 ## Resolve peer runtimes (only when `--peers` ≠ off)
 
+### Select the route before detecting it
+
+Bulk mirrors retain the configured GPT-5.6 Sol/high/Fast profile. When
+`--producer` is present, resolve a consequential validation chain instead:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/select-review-route.py" \
+  --purpose validation --producer "$PRODUCER"
+```
+
+The selector returns complete profiles in preference order. A Claude/Fable or
+Kimi producer selects Astra/high/Standard first; an Astra producer selects
+Claude/Fable, then Kimi, then GPT-5.6 Sol, and never Astra. Keep the sealed
+first-pass output unavailable to the reviewer until its initial findings are
+complete. Intersect the returned chain with detected runtimes and choose the
+first available candidate. A Codex candidate whose installed version is below
+`minimum_codex_version` is unavailable. After dispatch, advance to the next
+candidate only for explicit model unavailability, account-access absence, or
+insufficient Codex version. Policy/misalignment 403s and other configuration
+4xx errors are terminal; retry 429s on the same model with a bounded retry.
+
+Without `--producer`, resolve the ordinary bulk mirror explicitly so its
+economics do not drift with the caller's global Codex default:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/select-review-route.py" --purpose bulk
+```
+
+Record `producer_identity` and the selected reviewer profile in the run plan
+and final report. Validation without a producer identity is invalid; do not
+guess it from the current host.
+
 1. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/detect-runtimes.sh` (emits one JSON object; exit 0 always).
-2. `auto` → every detected runtime; explicit list → keep detected entries, log-and-skip the rest
-   (never an error). Claude is always the primary, never a peer.
+2. For bulk review, `auto` → every detected external runtime and explicit list → keep detected
+   entries, log-and-skip the rest (never an error). For consequential validation, use the
+   producer-relative candidate chain above; Claude/Fable may be the reviewer when the host or
+   producer is not Claude. A reviewer must never resolve to the producer model.
 3. Per surviving runtime, resolve the model (flag `rt:model` > project yaml > plugin defaults)
    and bake the invoke template: substitute `{model}`/`{model_flag}`, `{projectRoot}`, and
    `{pluginRoot}` (= `${CLAUDE_PLUGIN_ROOT}`), leaving only `{promptfile}` (and `{outfile}`, if

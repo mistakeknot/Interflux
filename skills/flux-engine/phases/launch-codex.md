@@ -97,9 +97,12 @@ CLAVAIN_DISPATCH_PROFILE=clavain bash "$DISPATCH" \
 
 Passive-v1 fixed-tier exception (`sylveste-8r5h.19.2`): Codex review dispatch intentionally remains fixed on `--tier deep` instead of consuming the B2/Composer complexity tier per agent. The passive-v1 report treats this as a tested exception, not routed activation. The review lane optimizes for stable cross-agent depth, while `phases/launch.md` remains the B2 routed compose path for Claude/Task dispatch. `--phase=flux-review` is retained as audit context and a future phase-aware dispatch hook; it does not currently select the tier.
 
-In Clavain Codex mode (`.claude/clodex-toggle.flag`, formerly "interserve mode") with `CLAVAIN_DISPATCH_PROFILE=clavain`, `--tier deep` maps to
-`gpt-5.3-codex-xhigh` via Clavain dispatch policy. Fast/deep dispatches in Clavain continue to
-follow the same profile from `config/routing.yaml`.
+In Clavain Codex mode (`.claude/clodex-toggle.flag`, formerly "interserve mode") with
+`CLAVAIN_DISPATCH_PROFILE=clavain`, `--tier deep` remains the legacy compatibility route and
+is resolved by the current Intercore/Clavain policy rather than by a model name embedded here.
+For consequential cross-model validation, use Clavain's role route with an explicit producer
+identity; it guarantees a different resolved model and applies the Astra eligibility/fallback
+rules. Fast/deep dispatches continue to follow `config/routing.yaml`.
 
 Notes:
 - Set `run_in_background: true` and `timeout: 600000` on each Bash call

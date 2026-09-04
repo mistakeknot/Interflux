@@ -1,7 +1,7 @@
 # Reference: Peer Runtimes — Multi-Runtime Mirrors & the Transport Shim
 
 `--peers` runs the SAME melange loop as epistemically independent mirrors on external agent
-runtimes (Codex CLI, Hermes Agent), each with its own ledger, lenses, and synthesis, then
+runtimes (Codex CLI, Claude CLI, Hermes Agent, or Kimi), each with its own ledger, lenses, and synthesis, then
 reconciles the syntheses in the Parley phase (phases/parley.md). This reference owns the
 detection contract, the shim contract, isolation rules, and cost math.
 
@@ -17,6 +17,24 @@ detection contract, the shim contract, isolation rules, and cost math.
 - Explicit list — e.g. `--peers=codex:gpt-5.6-sol,hermes`. A runtime that fails detection is
   logged and skipped (the run proceeds; never an error).
 - `--exchange-rounds=N` (default 3) caps the Parley exchange.
+
+## Producer-relative reviewer routing
+
+The ordinary bulk mirror remains `gpt-5.6-sol` at high reasoning on Fast. For
+consequential validation, pass `--producer=<kind>/<model>` and resolve the
+ordered chain with `scripts/select-review-route.py`:
+
+| Producer | Reviewer preference |
+|----------|---------------------|
+| Claude/Fable or Kimi | Astra/high/Standard, then Sol |
+| Astra | Claude/Fable, Kimi/K3, then Sol |
+| Other | Claude/Fable, Kimi/K3, then Sol |
+
+Astra requires Codex 0.153.1 or newer. Here “Standard” is represented by
+Codex's `service_tier="default"`; Fast remains confined to the Sol bulk mirror.
+The selector filters out the producer model and rejects validation requests
+without an explicit producer identity. Review first-pass findings are sealed
+until both sides have independently completed their initial pass.
 
 ## Detection
 
@@ -35,6 +53,7 @@ the CLI's final message from that file instead of scraping stdout):
 | Runtime | Template (default) |
 |---------|--------------------|
 | codex | `codex exec --full-auto --skip-git-repo-check --ephemeral -C "{projectRoot}" -m "{model}" -c service_tier="fast" -c model_reasoning_effort="high" -o "{outfile}" - < "{promptfile}"` |
+| claude/fable validator | `claude -p --model "fable" --permission-mode dontAsk --disallowedTools "Write,Edit,MultiEdit,NotebookEdit" < "{promptfile}" > "{outfile}"` |
 | hermes | `cd {projectRoot} && hermes -z "$(cat {promptfile})" [-m {model}] --yolo` |
 | kimi | `cd "{projectRoot}" && {pluginRoot}/scripts/kimi-peer-invoke.sh "{promptfile}" "{outfile}"` |
 
@@ -82,6 +101,12 @@ xhigh default: mirror tasks are scoped and numerous, so xhigh multiplies reasoni
 (latency and cost both) for marginal depth at this task size — raise per-project if a
 mirror's misses look depth-shaped rather than coverage-shaped. Both templates are config, not code — fix CLI drift in
 `flux-melange.yaml` without touching the engine.
+
+The validation profile is deliberately separate: Astra uses high reasoning and
+`service_tier="default"`, never Fast. Candidate fallback is allowed only for
+explicit model unavailability, account-access absence, or insufficient Codex
+version. A policy/misalignment 403 or other configuration 4xx is terminal;
+bounded 429 retries stay on the same model.
 
 ## The transport shim
 
