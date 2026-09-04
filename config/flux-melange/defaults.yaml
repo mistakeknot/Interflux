@@ -148,6 +148,51 @@ peers:
   exchange:
     max_rounds: 3          # Parley cap; fixed point usually lands in 1-2
 
+# --- Reviewer routing -------------------------------------------------------
+#
+# `peers` above remains the economical, high-volume mirror lane. This separate
+# table resolves a consequential validation reviewer relative to the producer:
+# Claude/Fable or Kimi output is reviewed by Astra; Astra output is reviewed by
+# an external model first, with Sol as the final fallback. The charter invokes
+# scripts/select-review-route.py instead of reconstructing this policy in prose.
+#
+reviewer_routing:
+  profiles:
+    sol-bulk:
+      kind: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+      service_tier: fast
+      invoke: 'codex exec --full-auto --skip-git-repo-check --ephemeral -C "{projectRoot}" -m "{model}" -c service_tier="fast" -c model_reasoning_effort="high" -o "{outfile}" - < "{promptfile}"'
+    astra-review:
+      kind: codex
+      model: gpt-6-astra
+      reasoning_effort: high
+      service_tier: standard
+      minimum_codex_version: 0.153.1
+      invoke: 'codex exec --full-auto --skip-git-repo-check --ephemeral -C "{projectRoot}" -m "{model}" -c service_tier="default" -c model_reasoning_effort="high" -o "{outfile}" - < "{promptfile}"'
+    fable-review:
+      kind: claude
+      model: fable
+      reasoning_effort: high
+      service_tier: standard
+      invoke: 'claude -p --model "{model}" --permission-mode dontAsk --disallowedTools "Write,Edit,MultiEdit,NotebookEdit" < "{promptfile}" > "{outfile}"'
+    kimi-review:
+      kind: kimi
+      model: k3
+      reasoning_effort: high
+      service_tier: standard
+      invoke: 'cd "{projectRoot}" && {pluginRoot}/scripts/kimi-peer-invoke.sh "{promptfile}" "{outfile}"'
+  routes:
+    bulk: [sol-bulk]
+    validation:
+      producer_model:
+        gpt-6-astra: [fable-review, kimi-review, sol-bulk]
+      producer_kind:
+        claude: [astra-review, sol-bulk]
+        kimi: [astra-review, sol-bulk]
+      default: [fable-review, kimi-review, sol-bulk]
+
 # --- Quality / model routing ------------------------------------------------
 #
 # economy = all Sonnet (+ skip taste). balanced = Opus on creative/judgment
