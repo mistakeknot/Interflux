@@ -81,16 +81,22 @@ def test_flux_drive_launch_consumes_clavain_b2_routing_contract(skills_dir):
     assert 'model:' in launch
 
 
-def test_flux_drive_codex_launch_records_fixed_tier_exception(skills_dir):
-    """Codex launch must make the passive-v1 fixed-tier exception explicit."""
+def test_flux_drive_codex_launch_requires_independent_producer_routing(skills_dir):
+    """Consequential review cannot bypass canonical producer separation."""
     launch = (skills_dir / "flux-engine" / "phases" / "launch-codex.md").read_text()
 
     assert "CLAVAIN_DISPATCH_PROFILE=clavain" in launch
-    assert "--tier deep" in launch
+    assert '--role validation' in launch
+    assert '--producer-identity "$PRODUCER_IDENTITY"' in launch
+    assert '${PRODUCER_IDENTITY:?' in launch
+    assert '-s read-only' in launch
+    assert '-o "$OUTPUT_DIR/{agent-name}.md"' in launch
+    assert 'templates/role-review-agent.md' in launch
+    template = (skills_dir / "flux-engine" / "templates" / "role-review-agent.md").read_text()
+    assert 'Return the complete report in your final response' in template
     assert "--phase=flux-review" in launch
-    assert "fixed-tier exception" in launch
-    assert "sylveste-8r5h.19.2" in launch
-    assert "passive-v1" in launch
     assert "config/routing.yaml" in launch
     assert "config/dispatch/tiers.yaml" not in launch
-    assert "future phase-aware dispatch hook" in launch
+    assert "Retry once with the same prompt" not in launch
+    assert "fall back to Task dispatch" not in launch
+    assert "policy" in launch
