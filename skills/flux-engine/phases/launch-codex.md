@@ -1,6 +1,6 @@
 # Phase 2: Launch (Codex Dispatch)
 
-**Condition**: Use this file when `DISPATCH_MODE = codex`. This routes review agents through Codex CLI instead of Claude subagents.
+**Condition**: Use this file when `DISPATCH_MODE = codex`. Review uses the Clavain CLI dispatcher; the resolved validation role may choose another backend to remain independent of the producer.
 **Shared contracts**: See `phases/shared-contracts.md` for output format, completion signals, prompt trimming, and monitoring.
 
 ## Resolve paths (with guards)
@@ -10,12 +10,17 @@ DISPATCH=$(find ~/.claude/plugins/cache -path '*/clavain/*/scripts/dispatch.sh' 
 [[ -z "$DISPATCH" ]] && DISPATCH=$(find ~/projects/Sylveste/os/Clavain -name dispatch.sh -path '*/scripts/*' 2>/dev/null | head -1)
 [[ -z "$DISPATCH" ]] && { echo "FATAL: dispatch.sh not found"; exit 1; }
 
-REVIEW_TEMPLATE=$(find ~/.claude/plugins/cache -path '*/clavain/*/skills/interserve/templates/review-agent.md' 2>/dev/null | head -1)
-[[ -z "$REVIEW_TEMPLATE" ]] && REVIEW_TEMPLATE=$(find ~/projects/Sylveste/os/Clavain -path '*/skills/interserve/templates/review-agent.md' 2>/dev/null | head -1)
-[[ -z "$REVIEW_TEMPLATE" ]] && { echo "FATAL: review-agent.md template not found"; exit 1; }
+REVIEW_TEMPLATE="${CLAUDE_PLUGIN_ROOT}/skills/flux-engine/templates/role-review-agent.md"
+[[ -f "$REVIEW_TEMPLATE" ]] || { echo "FATAL: role-review-agent.md template not found"; exit 1; }
 ```
 
-If either path resolution fails, fall back to Task dispatch (`phases/launch.md` step 2.2) for this run.
+If either path resolution fails, stop this review lane and report the configuration error. Do not select an unvalidated backend as a fallback.
+
+Obtain `PRODUCER_IDENTITY` from the producing dispatch's resolved profile/result
+packet and retain it in the compose plan. Do not infer it from `DISPATCH_MODE`, a
+tier, or the current parent model. If provenance is missing, request it before
+launching consequential review. The resolver rejects missing/unknown identities
+and excludes the producing model from every candidate in the validation chain.
 
 ## Project Agent bootstrap (codex mode only)
 
@@ -41,8 +46,8 @@ fi
 When `BOOTSTRAP=true`, dispatch a **blocking** Codex agent to create Project Agents:
 
 ```bash
-BOOTSTRAP_TEMPLATE=$(find ~/.claude/plugins/cache -path '*/clavain/*/skills/interserve/templates/create-review-agent.md' 2>/dev/null | head -1)
-[[ -z "$BOOTSTRAP_TEMPLATE" ]] && BOOTSTRAP_TEMPLATE=$(find ~/projects/Sylveste/os/Clavain -path '*/skills/interserve/templates/create-review-agent.md' 2>/dev/null | head -1)
+BOOTSTRAP_TEMPLATE=$(find ~/.claude/plugins/cache -path '*/clavain/*/skills/interserve-engine/templates/create-review-agent.md' 2>/dev/null | head -1)
+[[ -z "$BOOTSTRAP_TEMPLATE" ]] && BOOTSTRAP_TEMPLATE=$(find ~/projects/Sylveste/os/Clavain -path '*/skills/interserve-engine/templates/create-review-agent.md' 2>/dev/null | head -1)
 [[ -z "$BOOTSTRAP_TEMPLATE" ]] && { echo "WARNING: create-review-agent.md not found — skipping Project Agent bootstrap"; BOOTSTRAP=false; }
 ```
 
@@ -73,7 +78,7 @@ AGENT_NAME:
 
 TIER:
 {project|adaptive|cross-ai}
-(Note: This TIER field is metadata for tracking. dispatch.sh handles model selection via its --tier flag.)
+(Note: This TIER field is review-category metadata. The validation role handles model selection.)
 
 OUTPUT_FILE:
 {OUTPUT_DIR}/{agent-name}.md
@@ -86,28 +91,27 @@ Prompt trimming for `AGENT_IDENTITY` uses the shared contract in `phases/shared-
 Launch all Codex agents via parallel Bash calls in a single message:
 
 ```bash
+: "${PRODUCER_IDENTITY:?Resolved producer identity is required for independent review}"
 CLAVAIN_DISPATCH_PROFILE=clavain bash "$DISPATCH" \
   --template "$REVIEW_TEMPLATE" \
   --prompt-file "$FLUX_TMPDIR/{agent-name}.md" \
   -C "$PROJECT_ROOT" \
-  -s workspace-write \
-  --tier deep \
+  -s read-only \
+  -o "$OUTPUT_DIR/{agent-name}.md" \
+  --role validation \
+  --producer-identity "$PRODUCER_IDENTITY" \
   --phase=flux-review
 ```
 
-Passive-v1 fixed-tier exception (`sylveste-8r5h.19.2`): Codex review dispatch intentionally remains fixed on `--tier deep` instead of consuming the B2/Composer complexity tier per agent. The passive-v1 report treats this as a tested exception, not routed activation. The review lane optimizes for stable cross-agent depth, while `phases/launch.md` remains the B2 routed compose path for Claude/Task dispatch. `--phase=flux-review` is retained as audit context and a future phase-aware dispatch hook; it does not currently select the tier.
-
-In Clavain Codex mode (`.claude/clodex-toggle.flag`, formerly "interserve mode") with
-`CLAVAIN_DISPATCH_PROFILE=clavain`, `--tier deep` remains the legacy compatibility route and
-is resolved by the current Intercore/Clavain policy rather than by a model name embedded here.
-For consequential cross-model validation, use Clavain's role route with an explicit producer
-identity; it guarantees a different resolved model and applies the Astra eligibility/fallback
-rules. Fast/deep dispatches continue to follow `config/routing.yaml`.
+This replaces the old fixed-tier review exception: a tier cannot prove model
+independence. `config/routing.yaml` owns the validation profile and ordered
+fallbacks. `--phase=flux-review` remains audit context. Scout/bootstrap and bulk
+mirror economics are unchanged; this contract applies to acceptance review.
 
 Notes:
 - Set `run_in_background: true` and `timeout: 600000` on each Bash call
 - Do NOT use `--inject-docs` — Codex reads CLAUDE.md natively via `-C`
-- Do NOT use `-o` for output capture — the agent writes findings directly to `{OUTPUT_DIR}/{agent-name}.md`
+- The reviewer returns the complete report in its final response; `-o` captures it outside the model sandbox. Never enable file-mutation tools merely to write the report. Codex uses `read-only`; Claude uses the dispatcher's restrictive reviewer tool policy; Kimi uses its no-tools profile and therefore requires the complete review material in the prompt.
 - **Cross-AI (Oracle)**: Unchanged — already dispatched via Bash
 
 Monitor using the shared monitoring contract. Codex timeout is 10 minutes.
@@ -116,9 +120,9 @@ Monitor using the shared monitoring contract. Codex timeout is 10 minutes.
 
 After all background Bash calls complete, check for missing findings files. For any agent whose `{OUTPUT_DIR}/{agent-name}.md` does not exist:
 1. Check the background Bash exit code — if non-zero, log the error
-2. Retry once with the same prompt file
-3. If retry also produces no findings file, fall back to Task dispatch for that agent
-4. Note the failure in the synthesis summary: "Agent X: Codex dispatch failed, used Task fallback"
+2. Read the dispatch failure class and recorded route decision. The dispatcher already owns bounded 429 retries and explicit-unavailability fallback.
+3. Never replay policy/configuration denials or independently substitute Task/another model. Preserve the missing review as an unresolved gate.
+4. Report the failure and evidence to the main integrator for explicit disposition. A missing findings file is not a clean review.
 
 ## Cleanup
 
