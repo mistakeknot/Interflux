@@ -407,6 +407,56 @@ def test_resolve_uses_lexical_when_embedding_model_does_not_match(
     assert len(requests) == 1
 
 
+@pytest.mark.parametrize("meta", [None, [], "partial"])
+def test_resolve_uses_lexical_when_embedding_meta_is_not_an_object(
+    tmp_path, monkeypatch, lens_registry, meta
+):
+    root = tmp_path / "registry"
+    _write_registry(root)
+    (root / "data" / "embeddings" / "meta.json").write_text(
+        json.dumps(meta), encoding="utf-8"
+    )
+    monkeypatch.setenv("LINSENKASTEN_ROOT", str(root))
+    monkeypatch.setattr(
+        lens_registry,
+        "_embed",
+        lambda _text: (_unit_vector(0), "local"),
+    )
+
+    match = lens_registry.resolve(
+        {"name": "fd-new", "focus": "queue fairness backpressure"}
+    )
+
+    assert match is not None
+    assert match["id"] == "gen:fd-body-only@bbbbbbbb"
+    assert match["method"] == "lexical"
+
+
+def test_resolve_ignores_cluster_head_without_a_string_id(
+    tmp_path, monkeypatch, lens_registry
+):
+    root = tmp_path / "registry"
+    _write_registry(root)
+    index = root / "data" / "generated" / "index.jsonl"
+    with index.open("a", encoding="utf-8") as handle:
+        handle.write(
+            json.dumps(
+                {
+                    "name": "fd-idless",
+                    "summary": "unique idless summary",
+                    "cluster": {"head": True, "id": "cluster-idless"},
+                    "corrupt": False,
+                    "spec_path": None,
+                }
+            )
+            + "\n"
+        )
+    monkeypatch.setenv("LINSENKASTEN_ROOT", str(root))
+    monkeypatch.setattr(lens_registry, "_embed", lambda _text: None)
+
+    assert lens_registry.resolve({"name": "fd-idless", "focus": "unique idless"}) is None
+
+
 def test_resolve_computes_query_norm_once(tmp_path, monkeypatch, lens_registry):
     root = tmp_path / "registry"
     _write_registry(root)
@@ -515,7 +565,10 @@ def test_materialize_copies_only_clean_body_when_registry_has_no_spec(
     assert "Keep this body verbatim." in text
     assert frontmatter["name"] == "fd-queue-fairness"
     assert frontmatter["description"] == "queue fairness backpressure"
+    assert frontmatter["generated_by"] == "flux-gen-prompt"
     assert frontmatter["tier"] == "registry"
+    generator = lens_registry._load_generate_agents()
+    assert "fd-queue-fairness" in generator.check_existing_agents(target.parent)
     assert text.endswith("# Body-only lens\n\nKeep this body verbatim.\n")
 
 
@@ -576,7 +629,9 @@ def test_materialize_rejects_invalid_registry_spec(tmp_path, monkeypatch, lens_r
     root = tmp_path / "registry"
     _write_registry(root)
     registry_spec = root / "data" / "generated" / "specs" / "gen:fd-canonical@aaaaaaaa.json"
-    registry_spec.write_text(json.dumps({"name": 7, "focus": "identity"}), encoding="utf-8")
+    registry_spec.write_text(
+        json.dumps({"name": "fd-canonical", "focus": ""}), encoding="utf-8"
+    )
     monkeypatch.setenv("LINSENKASTEN_ROOT", str(root))
     monkeypatch.setenv("LINSENKASTEN_OLLAMA_URL", "http://127.0.0.1:1")
     monkeypatch.delenv("LINSENKASTEN_OLLAMA_FALLBACK_URL", raising=False)
@@ -589,6 +644,37 @@ def test_materialize_rejects_invalid_registry_spec(tmp_path, monkeypatch, lens_r
             tmp_path / "agents",
             {"name": "fd-current-request", "source_spec_file": "current-spec.json"},
         )
+
+
+def test_materialize_replaces_legacy_registry_name_before_validation(
+    tmp_path, lens_registry
+):
+    root = tmp_path / "registry"
+    _write_registry(root)
+    registry_spec_path = (
+        root
+        / "data"
+        / "generated"
+        / "specs"
+        / "gen:fd-canonical@aaaaaaaa.json"
+    )
+    registry_spec = json.loads(registry_spec_path.read_text(encoding="utf-8"))
+    registry_spec["name"] = "fd_Legacy"
+    registry_spec_path.write_text(json.dumps(registry_spec), encoding="utf-8")
+    match = next(
+        record
+        for record in lens_registry.load(root)
+        if record["name"] == "fd-canonical"
+    )
+
+    target = lens_registry.materialize(
+        match,
+        tmp_path / "agents",
+        {"name": "fd-current-request", "source_spec_file": "current-spec.json"},
+    )
+
+    frontmatter = _frontmatter(target.read_text(encoding="utf-8"))
+    assert frontmatter["name"] == "fd-current-request"
 
 
 def test_record_reuse_uses_registry_then_home_fallback(tmp_path, monkeypatch, lens_registry):

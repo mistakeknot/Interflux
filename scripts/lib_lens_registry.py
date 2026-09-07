@@ -240,7 +240,8 @@ def _load_generated_matrix(root: Path) -> tuple[list[str], bytes] | None:
     if not isinstance(ids, list) or not all(isinstance(item, str) for item in ids):
         return None
     if (
-        meta.get("model") != EMBED_MODEL
+        not isinstance(meta, dict)
+        or meta.get("model") != EMBED_MODEL
         or meta.get("dim") != EMBED_DIM
         or len(data) != len(ids) * EMBED_DIM * 4
     ):
@@ -323,7 +324,9 @@ def resolve(spec: dict[str, Any]) -> dict[str, Any] | None:
     candidates = [
         record
         for record in load(root)
-        if not (record.get("corrupt") and not _record_has_spec(root, record))
+        if isinstance(record.get("id"), str)
+        and record["id"].strip()
+        and not (record.get("corrupt") and not _record_has_spec(root, record))
     ]
     if not candidates:
         return None
@@ -430,8 +433,13 @@ def materialize(
     generator = _load_generate_agents()
     if registry_spec_path is not None and registry_spec_path.is_file():
         raw_registry_spec = json.loads(registry_spec_path.read_text(encoding="utf-8"))
+        spec_for_validation = (
+            {**raw_registry_spec, "name": name}
+            if isinstance(raw_registry_spec, dict)
+            else raw_registry_spec
+        )
         is_valid, validation_errors, registry_spec = generator.validate_agent_spec(
-            raw_registry_spec,
+            spec_for_validation,
             name_pattern=_NAME_PATTERN.pattern,
         )
         if not is_valid:
@@ -464,6 +472,7 @@ def materialize(
     overrides: dict[str, Any] = {
         "name": name,
         "description": str(description).strip(),
+        "generated_by": "flux-gen-prompt",
         "tier": "registry",
         "registry_id": match.get("registry_id") or match["id"],
         "reused_at": datetime.now(timezone.utc).date().isoformat(),
