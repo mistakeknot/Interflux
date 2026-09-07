@@ -182,7 +182,7 @@ The trust boundary above is **enforced at a single chokepoint**, not by asking e
 | Sink | Phase step | How it routes through the chokepoint |
 |------|-----------|--------------------------------------|
 | Peer findings (reaction round) | reaction.md Step 2.5.3 | `sanitize(block, 2000)` / CLI pipe |
-| LLM-authored agent specs | generate-agents.py `render_agent` | `sanitize` / `sanitize_list` on persona, decision_lens, task_context, review_areas, anti_overlap, success_hints |
+| LLM-authored agent specs | generate-agents.py `render_agent` | `sanitize` / `sanitize_list` on focus, persona, decision_lens, task_context, review_areas, severity_examples, anti_overlap, success_hints |
 | Knowledge context | launch.md Step 2.1 | `sanitize` / CLI pipe before building the Knowledge Context block |
 | Domain-profile criteria | launch.md Step 2.1a | `sanitize` / CLI pipe before building `{DOMAIN_CONTEXT}` |
 | Interspect overlays | launch.md Step 2.1d | `sanitize` / CLI pipe before building `{OVERLAY_CONTEXT}` |

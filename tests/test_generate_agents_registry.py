@@ -18,6 +18,15 @@ WORKFLOW = (
     / "workflow"
     / "melange-workflow.js"
 )
+SEED_PHASE = (
+    REPO_ROOT / "skills" / "flux-melange-engine" / "phases" / "seed.md"
+)
+TRACK_DISPATCH = (
+    REPO_ROOT / "skills" / "flux-review-engine" / "phases" / "track-dispatch.md"
+)
+SHARED_CONTRACTS = (
+    REPO_ROOT / "skills" / "flux-engine" / "phases" / "shared-contracts.md"
+)
 REGISTRY_ID = "gen:fd-registry-match@aaaaaaaa"
 
 
@@ -50,13 +59,18 @@ def _write_fixture_registry(root: Path) -> None:
     )
 
 
-def _write_specs(path: Path) -> None:
+def _write_specs(
+    path: Path,
+    *,
+    name: str = "fd-registry-match",
+    focus: str = "Registry match.",
+) -> None:
     path.write_text(
         json.dumps(
             [
                 {
-                    "name": "fd-registry-match",
-                    "focus": "Registry match.",
+                    "name": name,
+                    "focus": focus,
                     "review_areas": ["Check registry reuse."],
                 }
             ]
@@ -86,11 +100,14 @@ def _run_generator(
     specs: Path,
     registry_root: Path,
     *extra: str,
+    home: Path | None = None,
 ) -> tuple[dict, subprocess.CompletedProcess[str]]:
     env = os.environ.copy()
     env["LINSENKASTEN_ROOT"] = str(registry_root)
     env["LINSENKASTEN_OLLAMA_URL"] = "http://127.0.0.1:1"
     env.pop("LINSENKASTEN_OLLAMA_FALLBACK_URL", None)
+    if home is not None:
+        env["HOME"] = str(home)
     result = subprocess.run(
         [
             sys.executable,
@@ -170,6 +187,89 @@ def test_registry_off_renders_normally(tmp_path):
     assert not (registry_root / "data" / "generated" / "reuse-log.jsonl").exists()
 
 
+def test_registry_auto_without_available_root_renders_normally(tmp_path):
+    registry_root = tmp_path / "missing-registry"
+    isolated_home = tmp_path / "empty-home"
+    project = tmp_path / "project"
+    specs = tmp_path / "specs.json"
+    isolated_home.mkdir()
+    project.mkdir()
+    _write_specs(specs)
+
+    report, _ = _run_generator(
+        project,
+        specs,
+        registry_root,
+        home=isolated_home,
+    )
+
+    assert report["generated"] == ["fd-registry-match"]
+    assert report["reused"] == []
+    assert report["errors"] == []
+    target = project / ".claude" / "agents" / "fd-registry-match.md"
+    assert _frontmatter(target)["tier"] == "generated"
+
+
+def test_registry_auto_without_match_renders_normally(tmp_path):
+    registry_root = tmp_path / "registry"
+    project = tmp_path / "project"
+    specs = tmp_path / "specs.json"
+    project.mkdir()
+    _write_fixture_registry(registry_root)
+    _write_specs(
+        specs,
+        name="fd-quantum-braid",
+        focus="Quantum braid invariants.",
+    )
+
+    report, _ = _run_generator(project, specs, registry_root)
+
+    assert report["generated"] == ["fd-quantum-braid"]
+    assert report["reused"] == []
+    assert report["errors"] == []
+    target = project / ".claude" / "agents" / "fd-quantum-braid.md"
+    assert _frontmatter(target)["tier"] == "generated"
+
+
+def test_registry_materialization_failure_falls_back_to_normal_generation(tmp_path):
+    registry_root = tmp_path / "registry"
+    project = tmp_path / "project"
+    specs = tmp_path / "specs.json"
+    project.mkdir()
+    _write_fixture_registry(registry_root)
+    _write_specs(specs)
+    (registry_root / "data" / "generated" / "lenses" / f"{REGISTRY_ID}.md").unlink()
+
+    report, _ = _run_generator(project, specs, registry_root)
+
+    assert report["generated"] == ["fd-registry-match"]
+    assert report["reused"] == []
+    assert len(report["errors"]) == 1
+    assert report["errors"][0].startswith(
+        "Registry reuse failed for 'fd-registry-match':"
+    )
+    target = project / ".claude" / "agents" / "fd-registry-match.md"
+    assert _frontmatter(target)["tier"] == "generated"
+
+
+def test_registry_auto_dry_run_reports_reuse_without_materializing(tmp_path):
+    registry_root = tmp_path / "registry"
+    project = tmp_path / "project"
+    specs = tmp_path / "specs.json"
+    project.mkdir()
+    _write_fixture_registry(registry_root)
+    _write_specs(specs)
+
+    report, _ = _run_generator(project, specs, registry_root, "--dry-run")
+
+    assert report["generated"] == []
+    assert len(report["reused"]) == 1
+    assert report["reused"][0]["registry_id"] == REGISTRY_ID
+    target = project / ".claude" / "agents" / "fd-registry-match.md"
+    assert not target.exists()
+    assert not (registry_root / "data" / "generated" / "reuse-log.jsonl").exists()
+
+
 def test_melange_routes_registry_by_creative_intent():
     workflow = WORKFLOW.read_text(encoding="utf-8")
     seed = workflow.split("async function seedRun(R) {", 1)[1].split(
@@ -193,3 +293,26 @@ def test_melange_routes_registry_by_creative_intent():
     assert '${designRules(R, "off")}' in distant
     assert "--registry=off" in fuse
     assert "--registry=off" in wide
+
+
+def test_phase_docs_route_registry_by_creative_intent():
+    seed = SEED_PHASE.read_text(encoding="utf-8")
+    track_dispatch = TRACK_DISPATCH.read_text(encoding="utf-8")
+
+    assert "Seed adjacent" in seed
+    assert "--registry=auto" in seed
+    assert "Seed distant" in seed
+    assert "--registry=off" in seed
+    assert "Tracks A and B" in track_dispatch
+    assert "--registry=auto" in track_dispatch
+    assert "Tracks C and D" in track_dispatch
+    assert "--registry=off" in track_dispatch
+
+
+def test_shared_contract_lists_every_sanitized_agent_spec_field():
+    contracts = SHARED_CONTRACTS.read_text(encoding="utf-8")
+
+    assert (
+        "focus, persona, decision_lens, task_context, review_areas, "
+        "severity_examples, anti_overlap, success_hints"
+    ) in contracts

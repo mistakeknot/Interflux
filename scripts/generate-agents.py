@@ -523,33 +523,38 @@ def generate_from_specs(
         # Registry reuse must precede local skip-existing checks: an existing
         # generated copy may be stale while the registry has a canonical head.
         if registry_root is not None:
-            match = lens_registry.resolve(spec)
-            if match is not None:
-                target = agents_dir / f"{name}.md"
-                reuse = {
-                    "name": name,
-                    "registry_id": match["registry_id"],
-                    "score": match["score"],
-                    "method": match["method"],
-                    "embed_tier": match["embed_tier"],
-                }
-                if not dry_run:
-                    lens_registry.materialize(
-                        match,
-                        agents_dir,
-                        {**spec, "source_spec_file": specs_file_name},
-                    )
-                    lens_registry.record_reuse(
-                        registry_root,
-                        {
-                            **reuse,
-                            "consumer": "flux-gen",
-                            "project": str(project),
-                            "target": str(target),
-                        },
-                    )
-                report["reused"].append(reuse)
-                continue
+            try:
+                match = lens_registry.resolve(spec)
+                if match is not None:
+                    target = agents_dir / f"{name}.md"
+                    reuse = {
+                        "name": name,
+                        "registry_id": match["registry_id"],
+                        "score": match["score"],
+                        "method": match["method"],
+                        "embed_tier": match["embed_tier"],
+                    }
+                    if not dry_run:
+                        lens_registry.materialize(
+                            match,
+                            agents_dir,
+                            {**spec, "source_spec_file": specs_file_name},
+                        )
+                        lens_registry.record_reuse(
+                            registry_root,
+                            {
+                                **reuse,
+                                "consumer": "flux-gen",
+                                "project": str(project),
+                                "target": str(target),
+                            },
+                        )
+                    report["reused"].append(reuse)
+                    continue
+            except Exception as exc:
+                report["errors"].append(
+                    f"Registry reuse failed for '{name}': {exc}"
+                )
 
         if name in existing:
             if mode == "skip-existing":
