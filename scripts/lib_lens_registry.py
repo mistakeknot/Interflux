@@ -24,11 +24,13 @@ import yaml
 EMBED_MODEL = "nomic-embed-text"
 EMBED_DIM = 768
 RESOLVE_MIN_COSINE = 0.86
+LEXICAL_MIN_JACCARD = 0.6
 OLLAMA_TIMEOUT_SECONDS = 4.0
 
 _INDEX_PATH = Path("data/generated/index.jsonl")
 _NAME_PATTERN = re.compile(r"^fd-[a-z0-9]+(?:-[a-z0-9]+)*$")
 _VECTOR_FORMAT = f"<{EMBED_DIM}f"
+_GENERATE_AGENTS_MODULE: ModuleType | None = None
 _REUSE_FIELDS = (
     "registry_id",
     "name",
@@ -135,7 +137,8 @@ def load(root: str | os.PathLike[str] | None = None) -> list[dict[str, Any]]:
                 raise ValueError(f"invalid registry JSON at {index_path}:{line_number}") from exc
             if not isinstance(record, dict):
                 raise ValueError(f"registry row at {index_path}:{line_number} is not an object")
-            if record.get("cluster", {}).get("head") is True:
+            cluster = record.get("cluster")
+            if isinstance(cluster, dict) and cluster.get("head") is True:
                 item = dict(record)
                 item["_registry_root"] = str(registry_root)
                 heads.append(item)
@@ -162,7 +165,9 @@ def _record_path(
     return path
 
 
-def _spec_path(root: Path, record: dict[str, Any]) -> Path:
+def _spec_path(root: Path, record: dict[str, Any]) -> Path | None:
+    if "spec_path" in record and record["spec_path"] is None:
+        return None
     return _record_path(
         root,
         record,
@@ -182,7 +187,8 @@ def _body_path(root: Path, record: dict[str, Any]) -> Path:
 
 def _record_has_spec(root: Path, record: dict[str, Any]) -> bool:
     try:
-        return _spec_path(root, record).is_file()
+        spec_path = _spec_path(root, record)
+        return spec_path is not None and spec_path.is_file()
     except (KeyError, OSError, ValueError):
         return False
 
@@ -242,9 +248,8 @@ def _load_generated_matrix(root: Path) -> tuple[list[str], bytes] | None:
     return ids, data
 
 
-def _cosine(query: list[float], data: bytes, row: int) -> float:
+def _cosine(query: list[float], query_norm: float, data: bytes, row: int) -> float:
     vector = struct.unpack_from(_VECTOR_FORMAT, data, row * EMBED_DIM * 4)
-    query_norm = math.sqrt(sum(value * value for value in query))
     vector_norm = math.sqrt(sum(value * value for value in vector))
     if query_norm == 0 or vector_norm == 0:
         return 0.0
@@ -301,7 +306,7 @@ def _lexical_resolve(spec: dict[str, Any], candidates: list[dict[str, Any]]) -> 
         for record in candidates
     ]
     scored.sort(key=lambda item: (-item[0], item[1]))
-    if not scored or scored[0][0] < 0.6:
+    if not scored or scored[0][0] < LEXICAL_MIN_JACCARD:
         return None
     score, _, record = scored[0]
     return _match(record, score, "lexical", "lexical")
@@ -337,8 +342,9 @@ def resolve(spec: dict[str, Any]) -> dict[str, Any] | None:
     ids, data = loaded
     candidates_by_id = {record.get("id"): record for record in candidates}
     query, tier = embedded
+    query_norm = math.sqrt(sum(value * value for value in query))
     scores = [
-        (_cosine(query, data, row), lens_id, candidates_by_id[lens_id])
+        (_cosine(query, query_norm, data, row), lens_id, candidates_by_id[lens_id])
         for row, lens_id in enumerate(ids)
         if lens_id in candidates_by_id
     ]
@@ -350,13 +356,18 @@ def resolve(spec: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _load_generate_agents() -> ModuleType:
+    global _GENERATE_AGENTS_MODULE
+    if _GENERATE_AGENTS_MODULE is not None:
+        return _GENERATE_AGENTS_MODULE
+
     module_path = Path(__file__).with_name("generate-agents.py")
     module_spec = importlib.util.spec_from_file_location("_interflux_generate_agents", module_path)
     if module_spec is None or module_spec.loader is None:
         raise RuntimeError(f"cannot import render_agent from {module_path}")
     module = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module)
-    return module
+    _GENERATE_AGENTS_MODULE = module
+    return _GENERATE_AGENTS_MODULE
 
 
 def _split_frontmatter(text: str) -> tuple[dict[str, Any], str]:
@@ -416,9 +427,9 @@ def materialize(
     registry_spec_path = _spec_path(root, match)
     registry_spec: dict[str, Any] | None = None
     current_spec_file = spec.get("source_spec_file") or spec.get("source_spec")
-    if registry_spec_path.is_file():
+    generator = _load_generate_agents()
+    if registry_spec_path is not None and registry_spec_path.is_file():
         raw_registry_spec = json.loads(registry_spec_path.read_text(encoding="utf-8"))
-        generator = _load_generate_agents()
         is_valid, validation_errors, registry_spec = generator.validate_agent_spec(
             raw_registry_spec,
             name_pattern=_NAME_PATTERN.pattern,
@@ -427,7 +438,7 @@ def materialize(
             details = "; ".join(validation_errors)
             raise ValueError(f"invalid registry spec {registry_spec_path}: {details}")
         generated = generator.render_agent(
-            registry_spec,
+            {**registry_spec, "name": name},
             source_spec_file=str(current_spec_file) if current_spec_file else None,
         )
     else:
@@ -435,11 +446,20 @@ def materialize(
             raise ValueError("refusing to copy a corrupt registry body without a spec")
         generated = _body_path(root, match).read_text(encoding="utf-8")
 
-    description = match.get("summary")
-    if not isinstance(description, str) or not description.strip():
-        description = registry_spec.get("focus") if registry_spec else None
-    if not isinstance(description, str) or not description.strip():
-        description = spec.get("description") or spec.get("focus") or f"Registry lens {name}"
+    description_candidates = (
+        [registry_spec.get("focus")] if registry_spec else [match.get("summary")]
+    )
+    description_candidates.extend(
+        [spec.get("description"), spec.get("focus"), f"Registry lens {name}"]
+    )
+    description = next(
+        (
+            cleaned
+            for candidate in description_candidates
+            if (cleaned := generator.sanitize(candidate))
+        ),
+        generator.sanitize(f"Registry lens {name}"),
+    )
 
     overrides: dict[str, Any] = {
         "name": name,
@@ -462,7 +482,7 @@ def materialize(
 def _append_jsonl(path: Path, row: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(row, sort_keys=True) + "\n")
+        handle.write(json.dumps(row, sort_keys=True, default=str) + "\n")
 
 
 def record_reuse(
@@ -478,7 +498,7 @@ def record_reuse(
         try:
             _append_jsonl(primary, row)
             return primary
-        except OSError:
+        except (OSError, TypeError, ValueError):
             pass
 
     fallback = Path.home() / ".local" / "share" / "linsenkasten" / "reuse-log.jsonl"
