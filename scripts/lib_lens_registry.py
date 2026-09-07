@@ -9,6 +9,7 @@ import importlib.util
 import json
 import math
 import os
+import sys
 import re
 import struct
 import tempfile
@@ -133,10 +134,14 @@ def load(root: str | os.PathLike[str] | None = None) -> list[dict[str, Any]]:
                 continue
             try:
                 record = json.loads(line)
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"invalid registry JSON at {index_path}:{line_number}") from exc
+            except json.JSONDecodeError:
+                # Reuse is best-effort: a torn or foreign line must not abort lens generation
+                # (every other unavailability path in this module degrades instead of raising).
+                print(f"lib_lens_registry: skipping invalid registry JSON at {index_path}:{line_number}", file=sys.stderr)
+                continue
             if not isinstance(record, dict):
-                raise ValueError(f"registry row at {index_path}:{line_number} is not an object")
+                print(f"lib_lens_registry: skipping non-object registry row at {index_path}:{line_number}", file=sys.stderr)
+                continue
             cluster = record.get("cluster")
             if isinstance(cluster, dict) and cluster.get("head") is True:
                 item = dict(record)
@@ -385,8 +390,10 @@ def _split_frontmatter(text: str) -> tuple[dict[str, Any], str]:
     return parsed, text[end + len("\n---\n") :]
 
 
-def _render_with_frontmatter(text: str, overrides: dict[str, Any]) -> str:
+def _render_with_frontmatter(text: str, overrides: dict[str, Any], drop: tuple[str, ...] = ()) -> str:
     frontmatter, body = _split_frontmatter(text)
+    for key in drop:
+        frontmatter.pop(key, None)
     frontmatter.update(overrides)
     rendered = yaml.safe_dump(
         frontmatter,
@@ -476,16 +483,29 @@ def materialize(
         "tier": "registry",
         "registry_id": match.get("registry_id") or match["id"],
         "reused_at": datetime.now(timezone.utc).date().isoformat(),
-        "cohort_siblings": match.get("cohort_siblings")
-        or (match.get("cohort") or {}).get("siblings")
-        or [],
+        "cohort_siblings": _cohort_siblings(match),
     }
     if current_spec_file:
         overrides["source_spec"] = str(current_spec_file)
 
+    # A copied body carries the registry record's own provenance; none of it describes this reuse.
+    stale = ("source_spec", "use_count", "last_used", "generated_at", "registry_id", "reused_at")
     target = Path(agents_dir) / f"{name}.md"
-    _atomic_write(target, _render_with_frontmatter(generated, overrides))
+    _atomic_write(target, _render_with_frontmatter(generated, overrides, drop=stale))
     return target
+
+
+def _cohort_siblings(match: dict[str, Any]) -> list[str]:
+    explicit = match.get("cohort_siblings")
+    if isinstance(explicit, list):
+        return [str(item) for item in explicit]
+    cohort = match.get("cohort")
+    if isinstance(cohort, dict):
+        siblings = cohort.get("siblings")
+        return [str(item) for item in siblings] if isinstance(siblings, list) else []
+    if isinstance(cohort, list):
+        return [str(item) for item in cohort]
+    return []
 
 
 def _append_jsonl(path: Path, row: dict[str, Any]) -> None:

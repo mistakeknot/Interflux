@@ -731,3 +731,56 @@ def test_record_reuse_falls_back_after_primary_serialization_error(
 
     assert path == fallback_home / ".local" / "share" / "linsenkasten" / "reuse-log.jsonl"
     assert json.loads(path.read_text(encoding="utf-8"))["target"] == "plan.md"
+
+
+def test_load_skips_malformed_index_lines_instead_of_raising(tmp_path, lens_registry, capsys):
+    root = tmp_path / "registry"
+    _write_registry(root)
+    before = len(lens_registry.load(root))
+    index = root / "data" / "generated" / "index.jsonl"
+    index.write_text(index.read_text(encoding="utf-8") + '{"torn": tru\n[1, 2]\n', encoding="utf-8")
+    assert len(lens_registry.load(root)) == before
+    assert "skipping" in capsys.readouterr().err
+
+
+def test_materialize_copy_path_drops_the_registry_records_provenance(tmp_path, monkeypatch, lens_registry):
+    root = tmp_path / "registry"
+    _write_registry(root)
+    body = root / "data" / "generated" / "lenses" / "gen:fd-body-only@bbbbbbbb.md"
+    body.write_text(
+        "---\nname: fd-body-only\ndescription: Queue specialist\ntier: generated\n"
+        "source_spec: specs/2026-08-01-other-project.json\nuse_count: 7\nlast_used: '2026-08-12'\ngenerated_at: '2026-08-01'\n---\n"
+        "# Body-only lens\n\nKeep this body verbatim.\n",
+        encoding="utf-8",
+    )
+    match = next(r for r in lens_registry.load(root) if r["id"] == "gen:fd-body-only@bbbbbbbb")
+    target = lens_registry.materialize(match, tmp_path / "agents", {"name": "fd-queue-fairness"})
+    frontmatter = _frontmatter(target.read_text(encoding="utf-8"))
+    for stale in ("source_spec", "use_count", "last_used", "generated_at"):
+        assert stale not in frontmatter, stale
+    assert frontmatter["tier"] == "registry" and frontmatter["registry_id"] == "gen:fd-body-only@bbbbbbbb"
+    target = lens_registry.materialize(
+        match, tmp_path / "agents", {"name": "fd-queue-fairness", "source_spec_file": "/tmp/current.json"}
+    )
+    assert _frontmatter(target.read_text(encoding="utf-8"))["source_spec"] == "/tmp/current.json"
+
+
+def test_materialize_accepts_a_bare_list_cohort(tmp_path, lens_registry):
+    root = tmp_path / "registry"
+    _write_registry(root)
+    match = next(r for r in lens_registry.load(root) if r["id"] == "gen:fd-body-only@bbbbbbbb")
+    match["cohort"] = ["fd-a", "fd-b"]
+    target = lens_registry.materialize(match, tmp_path / "agents", {"name": "fd-queue-fairness"})
+    assert _frontmatter(target.read_text(encoding="utf-8"))["cohort_siblings"] == ["fd-a", "fd-b"]
+
+
+def test_materialize_refuses_a_body_path_outside_the_registry(tmp_path, lens_registry):
+    root = tmp_path / "registry"
+    _write_registry(root)
+    outside = tmp_path / "outside.md"
+    outside.write_text("---\nname: x\n---\nnot registry data\n", encoding="utf-8")
+    match = next(r for r in lens_registry.load(root) if r["id"] == "gen:fd-body-only@bbbbbbbb")
+    match["body_path"] = "../../outside.md"
+    with pytest.raises(ValueError, match="escapes data root"):
+        lens_registry.materialize(match, tmp_path / "agents", {"name": "fd-queue-fairness"})
+
