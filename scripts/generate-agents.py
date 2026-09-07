@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import lib_lens_registry as lens_registry  # noqa: E402
 from sanitize_untrusted import sanitize, sanitize_list  # noqa: E402
 
 
@@ -122,9 +123,10 @@ def _render_severity_calibration(
 
     if severity_examples:
         for ex in severity_examples:
-            sev = ex.get("severity", "P0")
-            scenario = ex.get("scenario", "")
-            condition = ex.get("condition", "")
+            sanitized = {key: sanitize(value) for key, value in ex.items()}
+            sev = sanitized.get("severity", "P0")
+            scenario = sanitized.get("scenario", "")
+            condition = sanitized.get("condition", "")
             lines.append(f"- **{sev}**: {scenario}")
             if condition:
                 lines.append(f"  - When: {condition}")
@@ -197,12 +199,13 @@ def render_agent(spec: dict[str, Any], source_spec_file: str | None = None) -> s
 
     Returns the complete file content including YAML frontmatter.
 
-    Untrusted LLM-authored fields (persona, decision_lens, review_areas,
-    task_context, anti_overlap, success_hints) are sanitized before embedding.
+    Untrusted LLM-authored fields (focus, persona, decision_lens, review_areas,
+    severity_examples, task_context, anti_overlap, success_hints) are sanitized
+    before embedding.
     See scripts/sanitize_untrusted.py and blueprint §3 B3.
     """
     name = spec["name"]
-    focus = spec.get("focus", "")
+    focus = sanitize(spec.get("focus", ""), max_len=500)
     task_context = sanitize(spec.get("task_context", ""), max_len=1000)
 
     persona = sanitize(spec.get("persona"), max_len=500)
@@ -417,6 +420,7 @@ def generate_from_specs(
     specs_path: Path,
     mode: str = "skip-existing",
     dry_run: bool = False,
+    registry_mode: str = "auto",
 ) -> dict[str, Any]:
     """Generate agents from an LLM-produced specs JSON file.
 
@@ -430,8 +434,12 @@ def generate_from_specs(
         task_context (str, optional): Context about the task/research question
         anti_overlap (list[str], optional): What NOT to flag (other agents cover it)
 
-    Returns a report dict with keys: status, generated, skipped, errors.
+    Returns a report dict with keys: status, generated, skipped, reused,
+    overlaps, errors.
     """
+    if registry_mode not in {"auto", "off"}:
+        raise ValueError("registry_mode must be 'auto' or 'off'")
+
     agents_dir = project / ".claude" / "agents"
 
     report: dict[str, Any] = {
@@ -439,7 +447,8 @@ def generate_from_specs(
         "specs_count": 0,
         "generated": [],
         "skipped": [],
-        "reused": [],  # existing proven/used agents that cover the domain
+        "reused": [],
+        "overlaps": [],  # existing proven/used agents that cover the domain
         "errors": [],
     }
 
@@ -469,6 +478,14 @@ def generate_from_specs(
 
     existing = check_existing_agents(agents_dir)
     _log(f"found {len(existing)} existing flux-gen agent(s)")
+
+    registry_root = (
+        lens_registry.find_registry_root() if registry_mode == "auto" else None
+    )
+    if registry_mode == "auto":
+        _log(
+            f"registry={'available at ' + str(registry_root) if registry_root else 'unavailable'}"
+        )
 
     # Build domain→proven/used agent index for overlap detection
     _domain_agents: dict[str, list[str]] = {}
@@ -503,6 +520,42 @@ def generate_from_specs(
             report["errors"].append(f"Skipping '{name}': conflicts with core agent")
             continue
 
+        # Registry reuse must precede local skip-existing checks: an existing
+        # generated copy may be stale while the registry has a canonical head.
+        if registry_root is not None:
+            try:
+                match = lens_registry.resolve(spec)
+                if match is not None:
+                    target = agents_dir / f"{name}.md"
+                    reuse = {
+                        "name": name,
+                        "registry_id": match["registry_id"],
+                        "score": match["score"],
+                        "method": match["method"],
+                        "embed_tier": match["embed_tier"],
+                    }
+                    if not dry_run:
+                        lens_registry.materialize(
+                            match,
+                            agents_dir,
+                            {**spec, "source_spec_file": specs_file_name},
+                        )
+                        lens_registry.record_reuse(
+                            registry_root,
+                            {
+                                **reuse,
+                                "consumer": "flux-gen",
+                                "project": str(project),
+                                "target": str(target),
+                            },
+                        )
+                    report["reused"].append(reuse)
+                    continue
+            except Exception as exc:
+                report["errors"].append(
+                    f"Registry reuse failed for '{name}': {exc}"
+                )
+
         if name in existing:
             if mode == "skip-existing":
                 report["skipped"].append(name)
@@ -520,7 +573,7 @@ def generate_from_specs(
                     continue
 
         # Domain overlap check: if a proven/used agent covers the same domains,
-        # log it as "reused" but still generate (the triage will prefer the
+        # report the overlap but still generate (the triage will prefer the
         # proven agent via scoring). Only skip if exact name match (above).
         spec_domains = _infer_domains_from_spec(spec)
         overlapping = set()
@@ -529,7 +582,7 @@ def generate_from_specs(
                 overlapping.update(_domain_agents.get(d, []))
         if overlapping:
             _log(f"{name}: domain overlap with proven/used agents: {overlapping}")
-            report["reused"].append({
+            report["overlaps"].append({
                 "new": name,
                 "overlapping": sorted(overlapping),
                 "domains": spec_domains,
@@ -567,6 +620,12 @@ def main() -> int:
         help="Generation mode (default: skip-existing)",
     )
     parser.add_argument(
+        "--registry",
+        choices=["auto", "off"],
+        default="auto",
+        help="Reuse a matching canonical registry lens, or disable lookup (default: auto)",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         dest="json_output",
@@ -588,7 +647,10 @@ def main() -> int:
     _verbose = args.verbose
 
     project = args.project_root.resolve()
-    _log(f"project_root={project}, specs={args.from_specs}, mode={args.mode}, json={args.json_output}")
+    _log(
+        f"project_root={project}, specs={args.from_specs}, mode={args.mode}, "
+        f"registry={args.registry}, json={args.json_output}"
+    )
 
     if not project.is_dir():
         print(f"Error: {project} is not a directory", file=sys.stderr)
@@ -602,7 +664,13 @@ def main() -> int:
     _log(f"specs_path={specs_path} ({specs_path.stat().st_size} bytes)")
 
     try:
-        report = generate_from_specs(project, specs_path, mode=args.mode, dry_run=args.dry_run)
+        report = generate_from_specs(
+            project,
+            specs_path,
+            mode=args.mode,
+            dry_run=args.dry_run,
+            registry_mode=args.registry,
+        )
     except Exception as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
@@ -618,11 +686,12 @@ def main() -> int:
     gen = report["generated"]
     skip = report["skipped"]
     reused = report.get("reused", [])
+    overlaps = report.get("overlaps", [])
     errs = report.get("errors", [])
 
     # Detect silent failure: specs had entries but nothing was generated or skipped
     specs_count = report.get("specs_count", 0)
-    if not gen and not skip and specs_count > 0:
+    if not gen and not skip and not reused and specs_count > 0:
         report["status"] = "warning"
         report["errors"].append(
             f"Specs file had {specs_count} entries but produced 0 agents and 0 skips. "
@@ -634,18 +703,26 @@ def main() -> int:
         print(json.dumps(report, indent=2))
     else:
         action = "Would generate" if args.dry_run else "Generated"
-        print(f"{action} {len(gen)} agent(s), skipped {len(skip)}.")
+        reuse_action = "would reuse" if args.dry_run else "reused"
+        print(
+            f"{action} {len(gen)} agent(s), {reuse_action} {len(reused)}, "
+            f"skipped {len(skip)}."
+        )
         if gen:
             print(f"  Generated: {', '.join(gen)}")
         if skip:
             print(f"  Skipped: {', '.join(skip)}")
         if reused:
-            print(f"  Domain overlap: {len(reused)} new agents overlap with proven/used agents")
+            print(f"  Registry reuse: {len(reused)} canonical agent(s)")
             for r in reused[:5]:
+                print(f"    {r['name']} ← {r['registry_id']} ({r['method']})")
+        if overlaps:
+            print(f"  Domain overlap: {len(overlaps)} new agents overlap with proven/used agents")
+            for r in overlaps[:5]:
                 print(f"    {r['new']} ↔ {', '.join(r['overlapping'][:3])}")
         for err in errs:
             print(f"  Warning: {err}", file=sys.stderr)
-        if not gen and not skip:
+        if not gen and not skip and not reused:
             print("  Warning: no agents generated or skipped — check specs file content", file=sys.stderr)
 
     return 0

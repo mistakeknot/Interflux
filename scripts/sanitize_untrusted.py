@@ -10,8 +10,9 @@ Untrusted channels (sinks) routed through this chokepoint:
   1. Peer findings passed into reaction-round prompts
      (reaction.md Step 2.5.3 — `sanitize` / CLI)
   2. LLM-generated agent specs rendered into agent system prompts
-     (generate-agents.py render_agent: persona, decision_lens, review_areas,
-     task_context, anti_overlap — `sanitize` / `sanitize_list`)
+     (generate-agents.py render_agent: focus, persona, decision_lens,
+     review_areas, severity_examples, task_context, anti_overlap —
+     `sanitize` / `sanitize_list`)
   3. Knowledge context pulled into agent prompts and synthesize.md
      (launch.md Step 2.1 — `sanitize` / CLI)
   4. Domain-profile overlays + interspect overlays
@@ -41,7 +42,7 @@ from typing import TextIO
 # XML/HTML-style tags that mimic system prompt boundaries. Stripped outright.
 _SYSTEM_TAG_PATTERN = re.compile(
     r"</?(?:system|system-reminder|human|assistant|user|tool_use|function_calls|"
-    r"function_call|instruction|instructions|prompt|role)(?:\s+[^>]*)?/?>",
+    r"function_call|instruction|instructions|prompt|role|task_context)(?:\s+[^>]*)?/?>",
     re.IGNORECASE,
 )
 

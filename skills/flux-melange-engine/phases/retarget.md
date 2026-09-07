@@ -28,8 +28,10 @@ Cap at 2–4 directives total. Assign `budget_weight`s summing to ≤ 1.0, biase
 ## Step 3: Generate the lenses each directive needs
 
 - **DEEPEN / PROBE-DISAGREEMENT** typically reuse an existing adjacent lens (named in the directive) — no design needed.
-- **FUSE** builds a synthetic fused-lens spec from the two parents' lens records (`references/fusion.md` § charter), saved to `.claude/flux-gen-specs/{SLUG}-fusion-{k}.json` and generated via `generate-agents.py --from-specs`. Use `interlens combine_lenses` to seed the hybrid when available.
-- **STEER-WIDE** designs a new distant/esoteric lens from a domain maximally distant from `coverage.regions`/`tiers_used` (reuse the flux-explore distant prompt with the accumulated-coverage list), goal-biased.
+- **FUSE** builds a synthetic fused-lens spec from the two parents' lens records (`references/fusion.md` § charter), saved to `.claude/flux-gen-specs/{SLUG}-fusion-{k}.json` and generated via `generate-agents.py --from-specs … --registry=off`. Use `interlens combine_lenses` to seed the hybrid when available.
+- **STEER-WIDE** designs a new distant/esoteric lens from a domain maximally distant from `coverage.regions`/`tiers_used` (reuse the flux-explore distant prompt with the accumulated-coverage list), goal-biased, and generates it with `--registry=off`.
+
+Registry routing follows creative intent: seed-adjacent generation uses `--registry=auto` so proven canonical lenses win before local `skip-existing`; seed-distant, FUSE, and STEER-WIDE use `--registry=off` because those paths exist to add genuinely new coverage.
 
 ## Output
 

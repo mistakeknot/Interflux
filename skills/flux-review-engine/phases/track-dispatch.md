@@ -166,9 +166,14 @@ Specs path: `{PROJECT_ROOT}/.claude/flux-gen-specs/{SLUG}-esoteric.json`
 
 ### After all tracks complete
 
-Each subagent calls generate-agents.py:
+Each subagent calls `generate-agents.py` with an explicit registry policy. Tracks A and B are reuse-first because they deepen or parallel known practice:
 ```
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --from-specs <specs-file> --mode=skip-existing --json
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --from-specs <adjacent-or-orthogonal-specs-file> --mode=skip-existing --registry=auto --json
+```
+
+Tracks C and D are novelty-first because distant and esoteric widening must produce new lenses rather than let registry reuse quietly win:
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --from-specs <distant-or-esoteric-specs-file> --mode=skip-existing --registry=off --json
 ```
 
 Display per-track results:

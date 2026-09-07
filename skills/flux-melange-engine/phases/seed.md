@@ -14,9 +14,13 @@ Launch **two** design subagents in parallel (model per `references/budget-ladder
 - **Adjacent:** reuse the Track A prompt from `flux-review-engine/phases/track-dispatch.md` (5 → trim to `seed.adjacent` agents, default 3).
 - **Distant:** reuse the Track C prompt (anti-clustering: the 13 blocked AI-analogy domains), `seed.distant` agents (default 2).
 
-Save specs to `.claude/flux-gen-specs/{SLUG}-seed-adjacent.json` and `{SLUG}-seed-distant.json`, then generate via the standard path:
+Save specs to `.claude/flux-gen-specs/{SLUG}-seed-adjacent.json` and `{SLUG}-seed-distant.json`, then generate with routing that matches each tier's creative intent:
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --from-specs <specs> --mode=skip-existing --json
+# Seed adjacent: reuse a matching canonical lens when available.
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --from-specs .claude/flux-gen-specs/{SLUG}-seed-adjacent.json --mode=skip-existing --registry=auto --json
+
+# Seed distant: preserve novelty instead of letting registry reuse win.
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --from-specs .claude/flux-gen-specs/{SLUG}-seed-distant.json --mode=skip-existing --registry=off --json
 ```
 
 Inject `GOAL` verbatim into each agent's `task_context` so the seed already pulls toward the goal.

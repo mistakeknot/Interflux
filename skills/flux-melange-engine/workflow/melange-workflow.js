@@ -543,14 +543,14 @@ already-hot regions unless you see something genuinely new there: ${directive.av
 }
 
 // ---- Phase 1: Seed (per run) --------------------------------------------------
-function designRules(R) {
+function designRules(R, registryMode) {
   return `For each agent output: name (fd-{domain}-{concern}${R.nameSuffix ? ` — and every name MUST end with "${R.nameSuffix}"` : ""}), focus, persona, decision_lens,
 review_areas (4-6 bullets), severity_examples (2-3 concrete), success_hints (array),
 task_context (must include this goal verbatim: "${A.goal}"), anti_overlap (array).
 Persona framing: descriptive reviewer-framework ("Apply the perspective of..."), never
 first-person "You are a...". Neutral task_context framings only.
 Steps: (1) Read the target file. (2) Write the JSON array of specs to the specs path.
-(3) Run: python3 ${A.pluginRoot}/scripts/generate-agents.py ${A.projectRoot} --from-specs {specs path} --mode=skip-existing --json
+(3) Run: python3 ${A.pluginRoot}/scripts/generate-agents.py ${A.projectRoot} --from-specs {specs path} --mode=skip-existing --registry=${registryMode} --json
 (4) For each lens, write a lens record to ${R.lensesDir}/{name}.json:
 {"id","kind":"base","parents":[],"domain","axioms":[3-7 load-bearing assumptions],"primitives":[units it reasons about],"failure_mode":[what it systematically misses],"findings":[]}
 (5) Return the structured output: for each lens its name/domain/axioms/primitives/failure_mode.`;
@@ -570,7 +570,7 @@ Target: ${A.targetDesc}
 File: ${A.inputPath}
 ${severityRef}
 Design ${A.seed.adjacent} agents. Specs path: ${A.projectRoot}/.claude/flux-gen-specs/${A.slug}${R.specTag}-seed-adjacent.json
-${designRules(R)}`,
+${designRules(R, "auto")}`,
         {
           label: "seed-design:adjacent",
           phase: `${R.pfx}Seed`,
@@ -593,7 +593,7 @@ Target: ${A.targetDesc}
 File: ${A.inputPath}
 ${severityRef}
 Design ${A.seed.distant} agents. Specs path: ${A.projectRoot}/.claude/flux-gen-specs/${A.slug}${R.specTag}-seed-distant.json
-${designRules(R)}`,
+${designRules(R, "off")}`,
         {
           label: "seed-design:distant",
           phase: `${R.pfx}Seed`,
@@ -1000,7 +1000,7 @@ perspectives; every finding must include an intersection_justification.
 Target: ${A.targetDesc} (${A.inputPath})
 Write a 1-element JSON spec array (same fd-* spec fields as other agents; name fd-fused-{concern}${R.nameSuffix ? ` ending with "${R.nameSuffix}"` : ""})
 to ${A.projectRoot}/.claude/flux-gen-specs/${A.slug}${R.specTag}-fusion-${fusionIdx}.json, run
-python3 ${A.pluginRoot}/scripts/generate-agents.py ${A.projectRoot} --from-specs ${A.projectRoot}/.claude/flux-gen-specs/${A.slug}${R.specTag}-fusion-${fusionIdx}.json --mode=skip-existing --json
+python3 ${A.pluginRoot}/scripts/generate-agents.py ${A.projectRoot} --from-specs ${A.projectRoot}/.claude/flux-gen-specs/${A.slug}${R.specTag}-fusion-${fusionIdx}.json --mode=skip-existing --registry=off --json
 then write the lens record (kind:"fusion", parents:${JSON.stringify(d.parents)}) to ${R.lensesDir}/{name}.json.
 Return the structured output.`,
         {
@@ -1034,7 +1034,7 @@ disciplines) AND maximally distant from these already-covered domains: ${Object.
           .join("; ")}.
 Target: ${A.targetDesc} (${A.inputPath}). Goal: "${A.goal}".
 Write a 1-element JSON spec array (fd-* fields${R.nameSuffix ? `; name ends with "${R.nameSuffix}"` : ""}) to ${A.projectRoot}/.claude/flux-gen-specs/${A.slug}${R.specTag}-wide-${round}.json, run
-python3 ${A.pluginRoot}/scripts/generate-agents.py ${A.projectRoot} --from-specs ${A.projectRoot}/.claude/flux-gen-specs/${A.slug}${R.specTag}-wide-${round}.json --mode=skip-existing --json
+python3 ${A.pluginRoot}/scripts/generate-agents.py ${A.projectRoot} --from-specs ${A.projectRoot}/.claude/flux-gen-specs/${A.slug}${R.specTag}-wide-${round}.json --mode=skip-existing --registry=off --json
 then write the lens record to ${R.lensesDir}/{name}.json. Return the structured output.`,
         {
           label: `wide-design:r${round}`,

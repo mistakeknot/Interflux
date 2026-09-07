@@ -68,10 +68,10 @@ Parse JSON response. On failure, report and abort.
 **Generate agents:**
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --from-specs /tmp/flux-explore-round-1.json --mode=skip-existing --json
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --from-specs /tmp/flux-explore-round-1.json --mode=skip-existing --registry=auto --json
 ```
 
-Parse report. Record generated agent names + focus descriptions in an accumulator list:
+Parse both `generated` and `reused` from the report. Round 1 is reuse-first: a registry match is materialized under the requested name and participates exactly like a freshly generated lens. Record all resulting agent names + focus descriptions in an accumulator list:
 
 ```
 accumulated_agents = [
@@ -157,7 +157,11 @@ Parse JSON response. On failure, report which round failed and continue to synth
 
 **Save specs** to `{PROJECT_ROOT}/.claude/flux-gen-specs/{slug}-round-{R}.json`.
 
-**Generate agents** (same as Round 1).
+**Generate agents** with `--registry=off`. Distant rounds exist to widen the explored space, so a reusable adjacent match must not replace the novel lens.
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --from-specs /tmp/flux-explore-round-{R}.json --mode=skip-existing --registry=off --json
+```
 
 Append new agents to `accumulated_agents` with their `source_domain`.
 
