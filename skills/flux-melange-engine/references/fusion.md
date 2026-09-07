@@ -41,7 +41,7 @@ Pick top-K (K = fusion budget, default ≤ 2 per round). `interlens` MCP tools (
 
 ## The hybrid-lens charter
 
-A fused lens is a single synthetic `fd-*` agent spec, built at runtime through the **same** validated `generate-agents.py --from-specs … --json` path (so it is a first-class reviewable object, not a special case), with `parent_lenses` recorded. Spec saved to `.claude/flux-gen-specs/{SLUG}-fusion-{k}.json`.
+A fused lens is a single synthetic `fd-*` agent spec, built at runtime through the **same** validated `generate-agents.py --from-specs … --registry=off --json` path (so it is a first-class reviewable object, not a special case), with `parent_lenses` recorded. Fusion deliberately disables registry reuse because its purpose is to create the new intersection of its parents; reuse-first generation could silently substitute an existing single-perspective lens. Spec saved to `.claude/flux-gen-specs/{SLUG}-fusion-{k}.json`.
 
 Charter template (the `persona` / `decision_lens` / `review_areas` are built from the intersection):
 

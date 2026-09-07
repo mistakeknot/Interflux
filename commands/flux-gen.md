@@ -64,14 +64,14 @@ Designed {N} task-specific agents:
 3. **Write specs** to a temp file using the Write tool (NOT heredoc/echo in Bash) and run the generation script:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --from-specs /tmp/flux-gen-specs.json --mode=skip-existing --json --verbose
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/generate-agents.py {PROJECT_ROOT} --from-specs /tmp/flux-gen-specs.json --mode=skip-existing --registry=auto --json --verbose
 ```
 
-Parse the JSON report. If `generated` is empty and `errors` contains a warning, display it prominently — this means the specs were malformed or all agents already exist.
+`--registry=auto` checks Linsenkasten before local `skip-existing` handling. Parse both `generated` and `reused`; each `reused` entry names the materialized agent, registry id, score, method, and embedding tier. If both lists are empty and `errors` contains a warning, display it prominently — this means the specs were malformed or all agents already exist. Use `--registry=off` only when the caller explicitly requires a novel lens.
 
 ## Step 5: Report
 
-Report generated agents (name, focus, status). Note specs path and regeneration command. Agents are available to flux-drive immediately (Project Agents, +1 bonus). Using as direct subagent_types requires session restart.
+Report generated and registry-reused agents (name, focus, status). Note specs path and regeneration command. Agents are available to flux-drive immediately (Project Agents, +1 bonus). Using as direct subagent_types requires session restart.
 
 ## Notes
 
