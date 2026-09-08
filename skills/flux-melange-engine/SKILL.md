@@ -9,6 +9,22 @@ Run a **closed-loop** review. Where `/flux-review` fans out a fixed set of track
 
 > **Spice metaphor (on-brand, load-bearing).** *Melange* (Dune's spice) grants prescience — the eye that sees across distance. The loop **assays** each round's spice, **steers toward the heat**, **fuses reagents** into new lenses, and ends with the **eye of distance** (synthesis). The names are mnemonics for real mechanics, not decoration.
 
+## Portable reasoning contract
+
+When Clavain is selected, its installation's `config/routing.yaml` and
+`docs/canon/reasoning-routing.md` govern planning and verdict roles. Pass the
+plan's decision context and actual author identity to `ic --json route dispatch
+--policy=<selected policy> --role=plan-review --producer-identity=<author>
+--context-file=<context>`. Foundational or especially consequential plans require
+the other frontier model. Ordinary lens pools retain their category safety floors;
+quality modes, calibration, and routing overrides cannot lower the returned
+frontier requirement or erase reviewer independence. Dispatch the final reviewer
+through the packaged role wrapper unless the host can enforce model and effort.
+Keep actual model/effort and policy hash receipts. Standalone Interflux without
+Clavain reports this reasoning contract as unsupported rather than asserting it
+is enforced. Existing blind-review, gauge, and publication gates still apply.
+
+
 ## Why this earns being a new mode (not flux-review + flags)
 
 `flux-review` is **open-loop**: it triages a track count exactly once, runs every track in a single blind parallel batch, and synthesizes at the end. No finding ever flows back into what later agents target, and lenses only ever **aggregate** — their *independence* is the convergence signal. `flux-melange` **closes the loop** and adds three capabilities the static lattice cannot express:

@@ -2,6 +2,22 @@
 
 Multi-agent document/codebase review and research. Follow phases in order.
 
+## Portable reasoning contract
+
+When Clavain is selected, its installation's `config/routing.yaml` and
+`docs/canon/reasoning-routing.md` govern planning and verdict roles. Pass the
+plan's decision context and actual author identity to `ic --json route dispatch
+--policy=<selected policy> --role=plan-review --producer-identity=<author>
+--context-file=<context>`. Foundational or especially consequential plans require
+the other frontier model. Ordinary lens pools retain their category safety floors;
+quality modes, calibration, and routing overrides cannot lower the returned
+frontier requirement or erase reviewer independence. Dispatch the final reviewer
+through the packaged role wrapper unless the host can enforce model and effort.
+Keep actual model/effort and policy hash receipts. Standalone Interflux without
+Clavain reports this reasoning contract as unsupported rather than asserting it
+is enforced. Existing blind-review, gauge, and publication gates still apply.
+
+
 ## Mode
 
 - Invoked via `/interflux:flux-drive` → `MODE = review`
